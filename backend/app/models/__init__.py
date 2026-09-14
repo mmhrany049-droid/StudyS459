@@ -1,5 +1,17 @@
 """SQLAlchemy ORM models. Every module MUST be imported here (alembic autogenerate)."""
 
+from app.models.academic import (
+    EXAM_QUESTION_RESULTS,
+    HOMEWORK_SOURCES,
+    HOMEWORK_STATUSES,
+    SCHEDULE_TYPES,
+    ClassSession,
+    Exam,
+    ExamQuestion,
+    Homework,
+    Schedule,
+    TaughtLesson,
+)
 from app.models.book import Book
 from app.models.book_import import BookImport
 from app.models.book_node import BookNode
@@ -23,6 +35,16 @@ __all__ = [
     "Book",
     "BookImport",
     "BookNode",
+    "ClassSession",
+    "EXAM_QUESTION_RESULTS",
+    "Exam",
+    "ExamQuestion",
+    "HOMEWORK_SOURCES",
+    "HOMEWORK_STATUSES",
+    "Homework",
+    "SCHEDULE_TYPES",
+    "Schedule",
+    "TaughtLesson",
     "NodeParityState",
     "Question",
     "QuestionAttempt",

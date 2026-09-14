@@ -3,8 +3,12 @@ import Layout from "@/components/Layout";
 import BookDetail from "@/pages/BookDetail";
 import Books from "@/pages/Books";
 import Dashboard from "@/pages/Dashboard";
+import ExamDetail from "@/pages/ExamDetail";
+import Exams from "@/pages/Exams";
 import Goals from "@/pages/Goals";
+import Homework from "@/pages/Homework";
 import Placeholder from "@/pages/Placeholder";
+import Schedule from "@/pages/Schedule";
 import Progress from "@/pages/Progress";
 import QuestionHistory from "@/pages/QuestionHistory";
 import TestResult from "@/pages/TestResult";
@@ -28,15 +32,10 @@ export default function App() {
         <Route path="goals" element={<Goals />} />
         <Route path="books" element={<Books />} />
         <Route path="books/:id" element={<BookDetail />} />
-        <Route
-          path="schedule"
-          element={<Placeholder title="برنامه مدرسه" phase="Phase 6" />}
-        />
-        <Route
-          path="homework"
-          element={<Placeholder title="تکالیف" phase="Phase 6" />}
-        />
-        <Route path="exams" element={<Placeholder title="امتحانات" phase="Phase 6" />} />
+        <Route path="schedule" element={<Schedule />} />
+        <Route path="homework" element={<Homework />} />
+        <Route path="exams" element={<Exams />} />
+        <Route path="exams/:id" element={<ExamDetail />} />
         <Route path="rewards" element={<Placeholder title="جوایز" phase="Phase 7" />} />
         <Route
           path="settings"

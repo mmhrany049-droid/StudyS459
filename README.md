@@ -81,6 +81,7 @@ StudyS459/
 - [x] **Phase 3** — Analytics پایه (Coverage ≠ Accuracy ≠ Volume)
 - [x] **Phase 4** — Goals (تعداد/موضوع، بدون double-count)
 - [x] **Phase 5** — Planner (قانون جمعه + School Override)
+- [x] **Phase 6** — Academic (مدرسه/کلاس/تکلیف/امتحان)
 - [ ] **Phase 4** — Goals (تعداد/موضوع، بدون double-count)
 - [ ] **Phase 5** — Planner (قانون جمعه + School Override)
 - [ ] **Phase 6** — Academic (مدرسه/کلاس/تکلیف/امتحان)

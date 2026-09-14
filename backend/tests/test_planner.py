@@ -71,10 +71,14 @@ def test_task_validations(db_session: Session) -> None:
         service.create_task(db_session, user_id=1, payload=TaskCreate(
             task_type="study", title="x", source_type="goal", source_id=999))
     assert e.value.code == "invalid_task_source"
+    # Phase 6: homework/exam sources are live (existence-checked).
+    ok = service.create_task(db_session, user_id=1, payload=TaskCreate(
+        task_type="study", title="x", source_type="homework"))
+    assert ok.source_type == "homework"
     with pytest.raises(AppError) as e:
         service.create_task(db_session, user_id=1, payload=TaskCreate(
-            task_type="study", title="x", source_type="homework"))
-    assert e.value.code == "task_source_unavailable"
+            task_type="study", title="x", source_type="homework", source_id=999))
+    assert e.value.code == "invalid_task_source"
     with pytest.raises(AppError) as e:
         service.patch_task(db_session, user_id=1, task_id=999,
                            payload=TaskPatch(title="y"))

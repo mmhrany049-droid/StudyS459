@@ -29,6 +29,33 @@ def create_task(db: Session, **fields) -> Task:
     return task
 
 
+def tasks_by_source(db: Session, source_type: str, source_id: int) -> list[Task]:
+    return list(
+        db.execute(
+            select(Task).where(Task.source_type == source_type, Task.source_id == source_id)
+            .order_by(Task.id)
+        ).scalars().all()
+    )
+
+
+def latest_task_by_source(db: Session, source_type: str, source_id: int) -> Task | None:
+    rows = tasks_by_source(db, source_type, source_id)
+    return rows[-1] if rows else None
+
+
+def complete_tasks_by_source(
+    db: Session, source_type: str, source_id: int, *, completed_at: datetime
+) -> int:
+    n = 0
+    for task in tasks_by_source(db, source_type, source_id):
+        if task.status in ("planned", "in_progress"):
+            task.status = "completed"
+            task.completed_at = completed_at
+            n += 1
+    db.flush()
+    return n
+
+
 def complete_task_if_open(db: Session, task_id: int, *, completed_at: datetime) -> bool:
     """Idempotent completion for engine hooks. Returns True if it flipped."""
     task = db.get(Task, task_id)

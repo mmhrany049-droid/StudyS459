@@ -143,6 +143,27 @@ over-capacity warns with a breakdown and never deletes; finishing a
 linked test session auto-completes its task; `homework`/`exam` task
 sources activate in Phase 6.
 
+## Academic (Phase 6)
+
+Schedules, class sessions, taught lessons, homework, exams (spec 09).
+
+```bash
+curl -s localhost:8000/exams | head -c 300; echo
+```
+
+Key endpoints: `GET/POST /schedules` (weekly recurring or one-off with a
+date), `GET/POST /class-sessions`, `GET/POST /taught-lessons`
+(record-only: taught != learned, zero analytics effect), `GET/POST
+/homework` + `PATCH /homework/{id}` (optional task creation; done
+completes the linked task), `GET/POST /exams`, `GET /exams/{id}`, `POST
+/exams/{id}/questions` (duplicate-safe upsert by sequence), `GET
+/exams/{id}/analytics` (counts only).
+
+Rules: scheduled class minutes shrink day capacity (school rows only on
+school days; external always; floor 0); exam analytics never compute
+percentages or scores (open decisions #1/#6), so `exam_subject_results`
+is deliberately not built; capacity has no summer exception (rule 7).
+
 ## Structure (spec 12)
 
 ```

@@ -36,10 +36,19 @@ export interface DayPlan {
   is_school_day: boolean;
   override: boolean;
   capacity_minutes: number;
+  scheduled_minutes: number;
   workload_minutes: number;
   over_capacity: boolean;
   workload: Array<{ task_id: number; title: string; estimated_minutes: number }>;
   placements: PlacedTask[];
+  schedules: Array<{
+    id: number;
+    schedule_type: string;
+    title: string;
+    start_time: string;
+    end_time: string;
+    duration_minutes: number;
+  }>;
 }
 
 export interface WeekPlan {

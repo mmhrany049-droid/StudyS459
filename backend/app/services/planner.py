@@ -104,12 +104,6 @@ def _task_out(
 
 
 def _validate_source(db: Session, source_type: str, source_id: int | None) -> None:
-    if source_type in ("homework", "exam"):
-        raise AppError(
-            "task_source_unavailable",
-            "منبع تکلیف/امتحان در فاز ۶ فعال می‌شود.",
-            status_code=422,
-        )
     if source_id is None:
         return
     if source_type == "goal":
@@ -125,6 +119,16 @@ def _validate_source(db: Session, source_type: str, source_id: int | None) -> No
     elif source_type == "weakness":
         if book_repo.get_node(db, source_id) is None:
             raise AppError("invalid_task_source", "گره ضعف یافت نشد.", status_code=422)
+    elif source_type == "homework":
+        from app.models import Homework
+
+        if db.get(Homework, source_id) is None:
+            raise AppError("invalid_task_source", "تکلیف یافت نشد.", status_code=422)
+    elif source_type == "exam":
+        from app.models import Exam
+
+        if db.get(Exam, source_id) is None:
+            raise AppError("invalid_task_source", "امتحان یافت نشد.", status_code=422)
 
 
 def create_task(db: Session, *, user_id: int, payload: TaskCreate) -> TaskOut:
@@ -258,8 +262,13 @@ def put_placements(
 
 
 def _day_plan(db: Session, user_id: int, tz: str, day: date) -> DayPlanOut:
+    from app.schemas.academic import ScheduleOut
+    from app.services import academic as academic_service
+
     is_school, overridden = _day_kind(db, user_id, day)
-    capacity = _capacity(is_school)
+    scheduled_minutes, sched_rows = academic_service.day_schedules(
+        db, user_id, day, is_school_day=is_school)
+    capacity = max(0, _capacity(is_school) - scheduled_minutes)
     today = _today(tz)
     rows = repo.placements_on(db, user_id, day)
     tasks = [db.get(Task, r.task_id) for r in rows]
@@ -281,8 +290,22 @@ def _day_plan(db: Session, user_id: int, tz: str, day: date) -> DayPlanOut:
     return DayPlanOut(
         date=day, weekday=day.weekday(), is_school_day=is_school,
         override=overridden, capacity_minutes=capacity,
+        scheduled_minutes=scheduled_minutes,
         workload_minutes=total, over_capacity=total > capacity,
         workload=workload, placements=items,
+        schedules=[
+            ScheduleOut(
+                id=s.id, schedule_type=s.schedule_type,  # type: ignore[arg-type]
+                title=s.title, day_of_week=s.day_of_week,
+                start_time=s.start_time, end_time=s.end_time,
+                recurring=s.recurring, date=s.date,
+                subject_id=s.subject_id, node_id=s.node_id, source=s.source,
+                duration_minutes=int(
+                    (s.end_time.hour * 60 + s.end_time.minute)
+                    - (s.start_time.hour * 60 + s.start_time.minute)),
+            )
+            for s in sched_rows
+        ],
     )
 
 

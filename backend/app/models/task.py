@@ -1,6 +1,6 @@
 """Planner tasks + daily placements + school-day overrides (spec 04/08)."""
 
-from datetime import date, datetime
+from datetime import date as dt_date, datetime  # dt_date: `date` columns can't self-annotate
 
 from sqlalchemy import (
     Boolean,
@@ -73,7 +73,7 @@ class DailyTaskPlacement(Base):
     task_id: Mapped[int] = mapped_column(
         ForeignKey("tasks.id", ondelete="CASCADE"), primary_key=True
     )
-    date: Mapped[date] = mapped_column(Date, index=True)
+    date: Mapped[dt_date] = mapped_column(Date, index=True)
     position: Mapped[int] = mapped_column(Integer, default=0)
 
     task: Mapped[Task] = relationship(back_populates="placement")
@@ -85,7 +85,7 @@ class SchoolDayOverride(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    date: Mapped[date] = mapped_column(Date)
+    date: Mapped[dt_date] = mapped_column(Date)
     is_school_day: Mapped[bool] = mapped_column(Boolean)
     reason: Mapped[str | None] = mapped_column(String(256), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

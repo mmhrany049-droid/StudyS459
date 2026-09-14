@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.academic import ScheduleOut
+
 TaskType = Literal["test", "review", "study"]
 TaskSource = Literal["goal", "review", "weakness", "manual", "homework", "exam"]
 TaskStatus = Literal["planned", "in_progress", "completed", "cancelled"]
@@ -73,11 +75,13 @@ class DayPlanOut(BaseModel):
     weekday: int  # Monday=0..Sunday=6
     is_school_day: bool
     override: bool  # an explicit override set this day's kind
-    capacity_minutes: int
+    capacity_minutes: int  # base minus scheduled class minutes (floor 0)
+    scheduled_minutes: int
     workload_minutes: int
     over_capacity: bool
     workload: list[WorkloadRowOut]
     placements: list[PlacedTaskOut]
+    schedules: list[ScheduleOut]
 
 
 class WeekPlanOut(BaseModel):

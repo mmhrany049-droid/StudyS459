@@ -110,6 +110,12 @@ export default function Today() {
           <span>ظرفیت: {plan.capacity_minutes} دقیقه</span>
           <span>بار کاری: {plan.workload_minutes} دقیقه</span>
         </div>
+        {plan.schedules.length > 0 && (
+          <p className="mt-1 text-xs text-slate-500">
+            🏫 کلاس‌ها ({plan.scheduled_minutes}′):{" "}
+            {plan.schedules.map((s) => `${s.title} ${s.start_time.slice(0, 5)}–${s.end_time.slice(0, 5)}`).join("، ")}
+          </p>
+        )}
         <div className="mt-1 h-2 overflow-hidden rounded bg-slate-200">
           <div
             className={plan.over_capacity ? "h-full bg-red-500" : "h-full bg-emerald-500"}
