@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: Vazirmatn, system-ui, sans-serif;
+  direction: rtl;
+}
+
+/* RTL adjustments */
+* {
+  font-family: inherit;
+}
