@@ -15,6 +15,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
+from app.analytics.context import BookContext, build_book_context
+from app.analytics.finals import pair_buckets
 from app.analytics.metrics import (
     accuracy as calc_accuracy,
 )
@@ -30,7 +32,7 @@ from app.analytics.metrics import (
     weakness_score,
 )
 from app.errors import AppError
-from app.models import BookNode, NodeParityState, Question, TestSet
+from app.models import BookNode, Question, TestSet
 from app.repositories import analytics as repo
 from app.repositories import books as book_repo
 from app.repositories import tests as test_repo
@@ -52,45 +54,12 @@ from app.services.users import get_or_create_single_user
 
 
 @dataclass
-class _BookContext:
-    book_id: int
-    nodes: list[BookNode]
-    by_id: dict[int, BookNode]
-    children: dict[int | None, list[BookNode]]
-    depth: dict[int, int]
-    path: dict[int, str]
-    pool: dict[int, set[int]]  # node_id -> question ids (node + descendants)
-    parity: dict[int, str]  # node_id -> last_parity
-
-
-@dataclass
 class _Finals:
     buckets_per_q: dict[int, list[str]] = field(default_factory=lambda: defaultdict(list))
     sessions_of_q: dict[int, set[int]] = field(default_factory=lambda: defaultdict(set))
     session_started: dict[int, datetime] = field(default_factory=dict)
     session_ended: dict[int, datetime | None] = field(default_factory=dict)
     presented: set[int] = field(default_factory=set)  # qids in finished sessions
-
-
-def _pair_buckets(db: Session, user_id: int) -> dict[tuple[int, int], str]:
-    """Final bucket per (finished session, question) pair.
-
-    Questions presented but never touched have no attempt rows and resolve
-    to 'unanswered' via the membership list (never dropped).
-    """
-    out: dict[tuple[int, int], str] = {}
-    for (sid, qid, answer, result, _at, key, *_rest) in repo.finals_rows(db, user_id):
-        if result in ("correct", "wrong"):
-            out[(sid, qid)] = result
-        elif answer is None:
-            out[(sid, qid)] = "unanswered"
-        elif key is None:
-            out[(sid, qid)] = "pending"
-        else:
-            out[(sid, qid)] = "correct" if answer == key else "wrong"
-    for sid, qid in repo.finished_members(db, user_id):
-        out.setdefault((sid, qid), "unanswered")
-    return out
 
 
 def _finals_of(db: Session, user_id: int) -> _Finals:
@@ -122,67 +91,6 @@ def _finals_of(db: Session, user_id: int) -> _Finals:
     return out
 
 
-def _book_context(db: Session, *, user_id: int, book_id: int) -> _BookContext:
-    nodes = book_repo.list_nodes_for_book(db, book_id)
-    by_id = {n.id: n for n in nodes}
-    children: dict[int | None, list[BookNode]] = defaultdict(list)
-    for n in nodes:
-        children[n.parent_id].append(n)
-    depth: dict[int, int] = {}
-    path: dict[int, str] = {}
-
-    def walk(n: BookNode, d: int, trail: str) -> None:
-        depth[n.id] = d
-        path[n.id] = f"{trail} / {n.title}" if trail else n.title
-        for c in children.get(n.id, []):
-            walk(c, d + 1, path[n.id])
-
-    for root in children.get(None, []):
-        walk(root, 0, "")
-    # Orphan-safe: unreachable nodes still get depth/path.
-    for n in nodes:
-        depth.setdefault(n.id, 0)
-        path.setdefault(n.id, n.title)
-
-    from sqlalchemy import select
-
-    from app.models import QuestionTopicMap
-
-    rows = db.execute(
-        select(QuestionTopicMap.question_id, QuestionTopicMap.node_id)
-        .join(Question, Question.id == QuestionTopicMap.question_id)
-        .where(Question.book_id == book_id)
-    ).all()
-    direct: dict[int, set[int]] = defaultdict(set)
-    for qid, nid in rows:
-        direct[nid].add(qid)
-    pool: dict[int, set[int]] = {}
-
-    def pool_of(nid: int) -> set[int]:
-        if nid in pool:
-            return pool[nid]
-        sub = set(direct.get(nid, set()))
-        for c in children.get(nid, []):
-            sub |= pool_of(c.id)
-        pool[nid] = sub
-        return sub
-
-    for n in nodes:
-        pool_of(n.id)
-
-    parity_rows = db.execute(
-        select(NodeParityState.node_id, NodeParityState.last_parity).where(
-            NodeParityState.user_id == user_id,
-            NodeParityState.node_id.in_([n.id for n in nodes]) if nodes else False,
-        )
-    ).all()
-    return _BookContext(
-        book_id=book_id, nodes=nodes, by_id=by_id, children=children,
-        depth=depth, path=path, pool=pool,
-        parity={nid: p for nid, p in parity_rows},
-    )
-
-
 def _counts(buckets: list[str]) -> dict[str, int]:
     return {
         "correct": buckets.count("correct"),
@@ -193,7 +101,7 @@ def _counts(buckets: list[str]) -> dict[str, int]:
 
 
 def _topic_row(
-    ctx: _BookContext, finals: _Finals, node: BookNode
+    ctx: BookContext, finals: _Finals, node: BookNode
 ) -> TopicRowOut:
     pool = ctx.pool.get(node.id, set())
     buckets: list[str] = []
@@ -249,7 +157,7 @@ def overview(db: Session, *, user_id: int) -> OverviewOut:
 
     per_book: list[BookProgressOut] = []
     for book in books:
-        ctx = _book_context(db, user_id=user.id, book_id=book.id)
+        ctx = build_book_context(db, user_id=user.id, book_id=book.id)
         pool_all: set[int] = set()
         for s in ctx.pool.values():
             pool_all |= s
@@ -284,7 +192,7 @@ def overview(db: Session, *, user_id: int) -> OverviewOut:
     active_pool: set[int] = set()
     active_buckets: list[str] = []
     for book in active_books:
-        ctx = _book_context(db, user_id=user.id, book_id=book.id)
+        ctx = build_book_context(db, user_id=user.id, book_id=book.id)
         for qids in ctx.pool.values():
             for qid in qids:
                 active_pool.add(qid)
@@ -312,7 +220,7 @@ def book_topics(db: Session, *, user_id: int, book_id: int) -> BookTopicsOut:
     book = book_repo.get_book(db, book_id)
     if book is None:
         raise AppError("book_not_found", "کتاب یافت نشد.", status_code=404)
-    ctx = _book_context(db, user_id=user_id, book_id=book_id)
+    ctx = build_book_context(db, user_id=user_id, book_id=book_id)
     finals = _finals_of(db, user_id)
     return BookTopicsOut(
         book_id=book_id,
@@ -325,7 +233,7 @@ def node_progress(db: Session, *, user_id: int, node_id: int) -> NodeProgressOut
     node = book_repo.get_node(db, node_id)
     if node is None:
         raise AppError("node_not_found", "گره یافت نشد.", status_code=404)
-    ctx = _book_context(db, user_id=user_id, book_id=node.book_id)
+    ctx = build_book_context(db, user_id=user_id, book_id=node.book_id)
     finals = _finals_of(db, user_id)
     kids = [n for n in ctx.nodes if n.parent_id == node_id]
     kids.sort(key=lambda n: (n.order_index, n.id))
@@ -414,7 +322,7 @@ def trends(
             per_day[d]["sessions"].add(s.id)
     # Attribute finals to the session's start day.
     session_day = {s.id: user_day(s.started_at, user.timezone) for s in repo.finished_sessions(db, user.id)}
-    for (sid, _qid), bucket in _pair_buckets(db, user.id).items():
+    for (sid, _qid), bucket in pair_buckets(db, user.id).items():
         d = session_day.get(sid)
         if d is None or d not in per_day:
             continue
@@ -473,7 +381,7 @@ def weaknesses(
         activation = book_repo.get_activation(db, user.id, book.id)
         if not (activation and activation.active):
             continue  # actionable weaknesses come from ACTIVE books only
-        ctx = _book_context(db, user_id=user.id, book_id=book.id)
+        ctx = build_book_context(db, user_id=user.id, book_id=book.id)
         child_ids = {n.parent_id for n in ctx.nodes if n.parent_id is not None}
         for node in ctx.nodes:
             pool = ctx.pool.get(node.id, set())

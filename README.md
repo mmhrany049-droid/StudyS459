@@ -79,6 +79,7 @@ StudyS459/
 - [x] **Phase 1** — Book Engine (config-driven، بدون hard-code)
 - [x] **Phase 2** — Test Engine (با Range + زوج/فرد)
 - [x] **Phase 3** — Analytics پایه (Coverage ≠ Accuracy ≠ Volume)
+- [x] **Phase 4** — Goals (تعداد/موضوع، بدون double-count)
 - [ ] **Phase 4** — Goals (تعداد/موضوع، بدون double-count)
 - [ ] **Phase 5** — Planner (قانون جمعه + School Override)
 - [ ] **Phase 6** — Academic (مدرسه/کلاس/تکلیف/امتحان)

@@ -24,6 +24,30 @@ def saturday_of(d: date) -> date:
     return d - timedelta(days=(d.weekday() - 5) % 7)
 
 
+def normalize_week(day: date) -> tuple[date, date]:
+    """(week_start, week_end) for the Iranian week containing `day`.
+
+    week_start is Saturday, week_end is the Friday 6 days later.
+    Goal weeks (spec 08): any date resolves to its containing week.
+    """
+    start = saturday_of(day)
+    return start, start + timedelta(days=6)
+
+
+def week_window_utc(week_start: date, tz_name: str) -> tuple[datetime, datetime]:
+    """Half-open naive-UTC window [start, end) covering the week in user tz."""
+    zone = ZoneInfo(tz_name or "Asia/Tehran")
+    start_utc = (
+        datetime.combine(week_start, datetime.min.time())
+        .replace(tzinfo=zone).astimezone(timezone.utc).replace(tzinfo=None)
+    )
+    end_utc = (
+        datetime.combine(week_start + timedelta(days=7), datetime.min.time())
+        .replace(tzinfo=zone).astimezone(timezone.utc).replace(tzinfo=None)
+    )
+    return start_utc, end_utc
+
+
 def accuracy(correct: int, wrong: int) -> float | None:
     answered = correct + wrong
     return (correct / answered) if answered else None

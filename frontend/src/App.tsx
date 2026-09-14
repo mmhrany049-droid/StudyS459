@@ -3,6 +3,7 @@ import Layout from "@/components/Layout";
 import BookDetail from "@/pages/BookDetail";
 import Books from "@/pages/Books";
 import Dashboard from "@/pages/Dashboard";
+import Goals from "@/pages/Goals";
 import Placeholder from "@/pages/Placeholder";
 import Progress from "@/pages/Progress";
 import QuestionHistory from "@/pages/QuestionHistory";
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="test/:id/result" element={<TestResult />} />
         <Route path="progress" element={<Progress />} />
         <Route path="questions/:id" element={<QuestionHistory />} />
+        <Route path="goals" element={<Goals />} />
         <Route path="books" element={<Books />} />
         <Route path="books/:id" element={<BookDetail />} />
         <Route

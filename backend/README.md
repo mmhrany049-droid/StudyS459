@@ -101,6 +101,26 @@ score = (wrong + 0.5 x unanswered) / volume; all-correct topics are hidden.
 Finish/correction populate `review_queue` (wrong -> high, unanswered -> normal,
 one open row per question+reason).
 
+## Goals (Phase 4)
+
+Weekly count/topic goals (spec 02/08). Progress is always derived from
+finalized attempts (never stored counters).
+
+```bash
+curl -s localhost:8000/goals/weeks/2026-09-12 | head -c 300; echo
+```
+
+Key endpoints: `GET/POST /goals/weeks/{week}` (any day resolves to its
+Saturday..Friday week), `PATCH /goals/{id}` (mid-week adjustment),
+`GET /goals/{id}/candidate-tasks` (computed suggestions, not stored).
+
+Rules: count target = positive int (questions); topic target = coverage
+fraction (0,1] with required `node_id`; one goal per user+week (`409` on
+duplicate); week totals count every instance ONCE (no double-count);
+candidates merge goal/weakness/review sources with a Persian
+`recommendation_reason`; inactive books yield progress but no candidates;
+tasks/placements tables arrive with the Planner (Phase 5).
+
 ## Structure (spec 12)
 
 ```

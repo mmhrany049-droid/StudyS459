@@ -7,6 +7,7 @@ const NAV = [
   { to: "/week", label: "هفته" },
   { to: "/test", label: "تست" },
   { to: "/progress", label: "پیشرفت" },
+  { to: "/goals", label: "اهداف" },
   { to: "/books", label: "کتاب‌ها" },
   { to: "/schedule", label: "برنامه مدرسه" },
   { to: "/homework", label: "تکالیف" },

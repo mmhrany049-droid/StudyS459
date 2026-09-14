@@ -13,6 +13,7 @@ from app.models.test_session import SESSION_PARITIES, SESSION_STATUSES, TestSess
 from app.models.test_set import ALLOWED_TEST_TYPES, TestSet
 from app.models.user import User
 from app.models.user_book_activation import UserBookActivation
+from app.models.weekly_goal import WeeklyGoal, WeeklyGoalItem
 
 __all__ = [
     "ALLOWED_TEST_TYPES",
@@ -32,4 +33,6 @@ __all__ = [
     "TestSet",
     "User",
     "UserBookActivation",
+    "WeeklyGoal",
+    "WeeklyGoalItem",
 ]
