@@ -12,12 +12,16 @@ const navItems = [
   { path: '/week', label: 'هفته', labelEn: 'Week', icon: '🗓️' },
   { path: '/test', label: 'آزمون', labelEn: 'Test', icon: '📝' },
   { path: '/progress', label: 'پیشرفت', labelEn: 'Progress', icon: '📊' },
+  { path: '/analytics', label: 'تحلیل', labelEn: 'Analytics', icon: '📈' },
+  { path: '/review', label: 'مرور', labelEn: 'Review', icon: '🔁' },
   { path: '/books', label: 'کتاب‌ها', labelEn: 'Books', icon: '📚' },
   { path: '/schedule', label: 'برنامه', labelEn: 'Schedule', icon: '⏰' },
+  { path: '/classes', label: 'کلاس‌ها', labelEn: 'Classes', icon: '🏫' },
   { path: '/homework', label: 'تکالیف', labelEn: 'Homework', icon: '📋' },
   { path: '/exams', label: 'امتحانات', labelEn: 'Exams', icon: '🎓' },
   { path: '/friends', label: 'دوستان', labelEn: 'Friends', icon: '👥' },
   { path: '/telegram', label: 'تلگرام', labelEn: 'Telegram', icon: '✈️' },
+  { path: '/settings', label: 'تنظیمات', labelEn: 'Settings', icon: '⚙️' },
 ]
 
 export default function Layout({ children }: LayoutProps) {
