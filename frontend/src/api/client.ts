@@ -142,3 +142,19 @@ export const telegramAPI = {
 export const dashboardAPI = {
   get: () => apiClient.get('/dashboard/')
 }
+
+export const reviewAPI = {
+  list: (status: string = 'pending') => apiClient.get('/review/', { params: { status } }),
+  due: () => apiClient.get('/review/due'),
+  update: (id: number, status: string) => apiClient.post(`/review/${id}/update`, null, { params: { status } }),
+  add: (questionId: number, bookId?: number, reason: string = 'manual') => apiClient.post('/review/add', null, { params: { question_id: questionId, book_id: bookId, reason } })
+}
+
+export const studentStateAPI = {
+  get: () => apiClient.get('/student-state/')
+}
+
+export const progressAPI = {
+  get: () => apiClient.get('/progress/'),
+  overview: () => apiClient.get('/progress/overview')
+}

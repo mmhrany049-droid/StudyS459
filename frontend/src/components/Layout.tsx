@@ -10,6 +10,8 @@ const navItems = [
   { path: '/', label: 'داشبورد', labelEn: 'Dashboard', icon: '🏠' },
   { path: '/today', label: 'امروز', labelEn: 'Today', icon: '📅' },
   { path: '/week', label: 'هفته', labelEn: 'Week', icon: '🗓️' },
+  { path: '/goals', label: 'اهداف', labelEn: 'Goals', icon: '🎯' },
+  { path: '/student-state', label: 'وضعیت', labelEn: 'State', icon: '🧠' },
   { path: '/test', label: 'آزمون', labelEn: 'Test', icon: '📝' },
   { path: '/progress', label: 'پیشرفت', labelEn: 'Progress', icon: '📊' },
   { path: '/analytics', label: 'تحلیل', labelEn: 'Analytics', icon: '📈' },

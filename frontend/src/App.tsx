@@ -19,6 +19,8 @@ import Friends from './pages/Friends'
 import Telegram from './pages/Telegram'
 import Settings from './pages/Settings'
 import Review from './pages/Review'
+import Goals from './pages/Goals'
+import StudentState from './pages/StudentState'
 
 function App() {
   return (
@@ -30,6 +32,8 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/today" element={<Today />} />
           <Route path="/week" element={<Week />} />
+          <Route path="/goals" element={<Goals />} />
+          <Route path="/student-state" element={<StudentState />} />
           <Route path="/test" element={<Test />} />
           <Route path="/test/:id" element={<TestSession />} />
           <Route path="/test/:id/result" element={<TestResult />} />

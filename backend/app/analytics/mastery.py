@@ -9,18 +9,38 @@ def calculate_mastery(
     coverage: float,
     recent_correct: int = 0,
     recent_total: int = 0,
-    difficulty_weight: float = 1.0
+    difficulty_weight: float = 1.0,
+    exam_correct: int = 0,
+    exam_wrong: int = 0,
+    exam_total: int = 0
 ) -> float:
     """
     Configurable mastery formula - open decision isolated here
     Default: weighted combination, not just accuracy
+    Exam influence configurable via settings.exam_influence_on_mastery
     """
-    if total_attempts == 0:
+    if total_attempts == 0 and exam_total == 0:
         return 0.0
     
-    # Accuracy component
+    # Accuracy component from test sessions
     answered = correct + wrong
     accuracy = (correct / answered) if answered > 0 else 0.0
+    
+    # Exam accuracy component (distinct but may contribute)
+    exam_accuracy = 0.0
+    if exam_total > 0:
+        exam_answered = exam_correct + exam_wrong
+        if exam_answered > 0:
+            exam_accuracy = exam_correct / exam_answered
+    
+    # Blend exam influence if configured
+    # exam_influence_on_mastery is weight 0.0-1.0
+    exam_influence = settings.exam_influence_on_mastery
+    if exam_total > 0 and exam_influence > 0:
+        # Weighted blend: main accuracy + exam influence
+        blended_accuracy = accuracy * (1 - exam_influence) + exam_accuracy * exam_influence
+    else:
+        blended_accuracy = accuracy
     
     # Coverage component - mastery cannot exceed coverage significantly
     # If coverage low, mastery limited
@@ -33,13 +53,13 @@ def calculate_mastery(
     
     # Base mastery from accuracy and coverage
     # Using formula: mastery = (accuracy * coverage) adjusted by attempts
-    base_mastery = accuracy * coverage
+    base_mastery = blended_accuracy * coverage
     
     # Adjust for minimum attempts
     min_attempts = settings.mastery_min_attempts_for_mastery
     if total_attempts < min_attempts:
         # Scale down if not enough attempts
-        attempt_factor = total_attempts / min_attempts
+        attempt_factor = total_attempts / min_attempts if min_attempts > 0 else 1.0
         base_mastery *= attempt_factor
     
     # Difficulty weighting

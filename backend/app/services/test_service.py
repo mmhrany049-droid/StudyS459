@@ -89,6 +89,11 @@ def create_test_session(
     
     # Validate book activation if book specified
     if book_id:
+        book = db.query(Book).filter(Book.id == book_id).first()
+        if not book:
+            raise HTTPException(status_code=404, detail="Book not found")
+        if not book.is_active:
+            raise HTTPException(status_code=400, detail="Book is disabled globally")
         from ..models.book import UserBookActivation
         activation = db.query(UserBookActivation).filter(
             UserBookActivation.user_id == user_id,

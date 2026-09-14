@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config.settings import settings
 from .database import init_db
-from .api.routes import auth, books, test_sessions, analytics, goals, planner, academic, social, telegram, dashboard, review, progress
+from .api.routes import auth, books, test_sessions, analytics, goals, planner, academic, social, telegram, dashboard, review, progress, student_state
 
 app = FastAPI(
     title="StudyS459 - Study Management System",
@@ -33,6 +33,7 @@ app.include_router(academic.router, prefix="/api")
 app.include_router(social.router, prefix="/api")
 app.include_router(telegram.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
+app.include_router(student_state.router, prefix="/api")
 
 @app.on_event("startup")
 def on_startup():
