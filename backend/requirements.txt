@@ -1,0 +1,9 @@
+# SS459 backend — runtime dependencies (versions are lower bounds with safe caps)
+fastapi>=0.115,<0.118
+uvicorn[standard]>=0.32,<0.35
+pydantic>=2.9,<3
+pydantic-settings>=2.6,<3
+sqlalchemy>=2.0,<2.1
+alembic>=1.13,<1.15
+# PostgreSQL-ready: only needed when DATABASE_URL points to postgres
+psycopg[binary]>=3.2,<3.3
