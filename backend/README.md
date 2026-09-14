@@ -58,6 +58,28 @@ Key endpoints: `GET /books`, `GET /books/{id}`, `POST /books/import`,
 `GET /books/{id}/nodes`, `GET /nodes/{id}/children`.
 Deactivation never deletes history (spec 05/13).
 
+## Test Engine (Phase 2)
+
+Range + odd/even selection (spec 06). Pool = questions mapped to the node
+**or any descendant**; random sample without replacement; no partial sessions.
+
+```bash
+# 6 odd questions from node 2 (chem ch1_t1 after importing chem2):
+curl -s -X POST localhost:8000/test-sessions -H 'Content-Type: application/json' \
+  -d '{"node_id":2,"count":6,"parity":"odd"}' | head -c 300; echo
+```
+
+Key endpoints: `POST /test-sessions`, `GET /test-sessions/{id}`,
+`POST /test-sessions/{id}/answers` (append-only, `client_attempt_id` idempotent),
+`POST /test-sessions/{id}/finish` (idempotent),
+`POST /test-sessions/{id}/corrections` (pending only),
+`GET /nodes/{id}/parity-state` (last + suggested parity).
+
+Rules enforced: insufficient pool -> `422 insufficient_questions` (no session,
+Persian message + counts); timed requires `time_limit_seconds > 0`; untimed
+forbids it; timeout auto-completes with `ended_at = deadline` (deterministic);
+answer keys never leak to clients; sessions on inactive books -> `409`.
+
 ## Structure (spec 12)
 
 ```

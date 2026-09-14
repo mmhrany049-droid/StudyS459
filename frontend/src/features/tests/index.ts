@@ -1,2 +1,3 @@
-/** tests feature module — filled from Phase 1+ (spec 11/12). */
-export {};
+/** Tests feature (Phase 2): parity helpers + node picker. */
+export { default as SelectableNodeTree } from "./components/SelectableNodeTree";
+export { PARITY_OPTIONS, parityLabel } from "./parity";

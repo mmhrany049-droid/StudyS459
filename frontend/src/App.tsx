@@ -4,6 +4,9 @@ import BookDetail from "@/pages/BookDetail";
 import Books from "@/pages/Books";
 import Dashboard from "@/pages/Dashboard";
 import Placeholder from "@/pages/Placeholder";
+import TestResult from "@/pages/TestResult";
+import TestSession from "@/pages/TestSession";
+import TestSetup from "@/pages/TestSetup";
 
 export default function App() {
   return (
@@ -12,11 +15,9 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="today" element={<Placeholder title="امروز" phase="Phase 5" />} />
         <Route path="week" element={<Placeholder title="هفته" phase="Phase 5" />} />
-        <Route path="test" element={<Placeholder title="تست" phase="Phase 2" />} />
-        <Route
-          path="test-result"
-          element={<Placeholder title="نتیجه تست" phase="Phase 2" />}
-        />
+        <Route path="test" element={<TestSetup />} />
+        <Route path="test/:id" element={<TestSession />} />
+        <Route path="test/:id/result" element={<TestResult />} />
         <Route path="progress" element={<Placeholder title="پیشرفت" phase="Phase 3" />} />
         <Route path="books" element={<Books />} />
         <Route path="books/:id" element={<BookDetail />} />

@@ -89,17 +89,22 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(StarletteHTTPException)
     async def _http_error_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:  # noqa: D103, ARG001
+        # User-facing messages are Persian (codes are the stable contract).
+        if exc.status_code == 404:
+            message = "یافت نشد."
+        else:
+            message = str(exc.detail)
         code = "not_found" if exc.status_code == 404 else "http_error"
         return JSONResponse(
             status_code=exc.status_code,
-            content=error_envelope(code, str(exc.detail)),
+            content=error_envelope(code, message),
         )
 
     @app.exception_handler(RequestValidationError)
     async def _validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:  # noqa: D103, ARG001
         return JSONResponse(
             status_code=422,
-            content=error_envelope("validation_error", "Request validation failed", exc.errors()),
+            content=error_envelope("validation_error", "اعتبارسنجی درخواست ناموفق بود.", exc.errors()),
         )
 
     @app.exception_handler(Exception)
@@ -108,7 +113,7 @@ def create_app() -> FastAPI:
         detail = str(exc) if settings.DEBUG else None
         return JSONResponse(
             status_code=500,
-            content=error_envelope("internal_error", "Unexpected server error", detail),
+            content=error_envelope("internal_error", "خطای غیرمنتظره سرور.", detail),
         )
 
     # No URL prefix: contract paths (14_API_CONTRACT_V1.md) are served as-is.

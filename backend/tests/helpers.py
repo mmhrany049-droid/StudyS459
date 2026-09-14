@@ -1,6 +1,12 @@
-"""Shared builders for Book Engine tests."""
+"""Shared builders for Book/Test Engine tests."""
 
 import copy
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.models import BookNode
+from app.services.book_importer import import_book_config
 
 _BASE_CONFIG = {
     "book": {
@@ -34,3 +40,16 @@ _BASE_CONFIG = {
 def base_config() -> dict:
     """Fresh minimal VALID config (mutate freely per test)."""
     return copy.deepcopy(_BASE_CONFIG)
+
+
+def import_base(db_session: Session, config: dict | None = None):
+    """Import base_config (or override) for user 1; return ImportOut."""
+    return import_book_config(db_session, user_id=1, config=config or base_config())
+
+
+def node_map(db_session: Session, book_id: int) -> dict[str, int]:
+    """Map node code -> id for a book (base config uses code == key)."""
+    rows = db_session.execute(
+        select(BookNode.code, BookNode.id).where(BookNode.book_id == book_id)
+    ).all()
+    return {code: nid for code, nid in rows}

@@ -77,6 +77,7 @@ StudyS459/
 
 - [x] **Phase 0** — Foundation (config/logging/migrations/health/error envelope)
 - [x] **Phase 1** — Book Engine (config-driven، بدون hard-code)
+- [x] **Phase 2** — Test Engine (با Range + زوج/فرد)
 - [ ] **Phase 2** — Test Engine (با Range + زوج/فرد)
 - [ ] **Phase 3** — Analytics پایه (Coverage ≠ Accuracy ≠ Volume)
 - [ ] **Phase 4** — Goals (تعداد/موضوع، بدون double-count)

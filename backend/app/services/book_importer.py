@@ -39,7 +39,7 @@ def import_book_config(db: Session, *, user_id: int, config: dict) -> ImportOut:
         }
         raise AppError(
             "invalid_book_config",
-            f"Book config is invalid ({len(exc.issues)} issue(s))",
+            f"کانفیگ کتاب معتبر نیست ({len(exc.issues)} مورد).",
             status_code=422,
             details=details,
         ) from exc
@@ -61,8 +61,8 @@ def import_book_config(db: Session, *, user_id: int, config: dict) -> ImportOut:
             )
         raise AppError(
             "book_already_imported",
-            "This book was already imported with different content. "
-            "Re-import with changes is not supported in v1 (history-safe).",
+            "این کتاب قبلاً با محتوای متفاوت ایمپورت شده است. "
+            "ایمپورت مجدد با تغییر در نسخه ۱ پشتیبانی نمی‌شود.",
             status_code=409,
             details={"book_id": existing.id, "stable_key": existing.stable_key},
         )

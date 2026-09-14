@@ -60,7 +60,7 @@ def get_book_detail(db: Session, *, user_id: int, book_id: int) -> BookDetailOut
     get_or_create_single_user(db, user_id)
     book = repo.get_book(db, book_id)
     if book is None:
-        raise AppError("book_not_found", "Book not found", status_code=404)
+        raise AppError("book_not_found", "کتاب یافت نشد.", status_code=404)
     return _book_out(db, book, user_id=user_id)
 
 
@@ -87,7 +87,7 @@ def _test_set_summaries(
 def get_book_tree(db: Session, *, book_id: int) -> BookTreeOut:
     book = repo.get_book(db, book_id)
     if book is None:
-        raise AppError("book_not_found", "Book not found", status_code=404)
+        raise AppError("book_not_found", "کتاب یافت نشد.", status_code=404)
     nodes = repo.list_nodes_for_book(db, book_id)
     test_sets = repo.list_test_sets_for_book(db, book_id)
     counts = repo.question_counts_by_test_set(db, book_id)
@@ -120,7 +120,7 @@ def get_book_tree(db: Session, *, book_id: int) -> BookTreeOut:
 def get_node_children(db: Session, *, node_id: int) -> NodeChildrenOut:
     node = repo.get_node(db, node_id)
     if node is None:
-        raise AppError("node_not_found", "Node not found", status_code=404)
+        raise AppError("node_not_found", "گره یافت نشد.", status_code=404)
     children = repo.list_children(db, node_id)
     test_sets = repo.list_test_sets_for_book(db, node.book_id)
     counts = repo.question_counts_by_test_set(db, node.book_id)
@@ -148,7 +148,7 @@ def set_book_active(db: Session, *, user_id: int, book_id: int, active: bool) ->
     get_or_create_single_user(db, user_id)
     book = repo.get_book(db, book_id)
     if book is None:
-        raise AppError("book_not_found", "Book not found", status_code=404)
+        raise AppError("book_not_found", "کتاب یافت نشد.", status_code=404)
     try:
         row = repo.set_activation(db, user_id, book_id, active=active)
         db.commit()
