@@ -11,6 +11,7 @@ export interface SessionCreate {
   parity: Parity;
   timed: boolean;
   time_limit_seconds?: number | null;
+  task_id?: number | null;
 }
 
 export interface TopicRef {

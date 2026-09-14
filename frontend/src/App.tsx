@@ -10,14 +10,16 @@ import QuestionHistory from "@/pages/QuestionHistory";
 import TestResult from "@/pages/TestResult";
 import TestSession from "@/pages/TestSession";
 import TestSetup from "@/pages/TestSetup";
+import Today from "@/pages/Today";
+import Week from "@/pages/Week";
 
 export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
-        <Route path="today" element={<Placeholder title="امروز" phase="Phase 5" />} />
-        <Route path="week" element={<Placeholder title="هفته" phase="Phase 5" />} />
+        <Route path="today" element={<Today />} />
+        <Route path="week" element={<Week />} />
         <Route path="test" element={<TestSetup />} />
         <Route path="test/:id" element={<TestSession />} />
         <Route path="test/:id/result" element={<TestResult />} />

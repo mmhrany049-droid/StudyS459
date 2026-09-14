@@ -9,6 +9,7 @@ from app.models.question_attempt import QuestionAttempt
 from app.models.question_topic_map import QuestionTopicMap
 from app.models.review_queue import ReviewQueue
 from app.models.subject import Subject
+from app.models.task import TASK_SOURCES, TASK_STATUSES, TASK_TYPES, DailyTaskPlacement, SchoolDayOverride, Task
 from app.models.test_session import SESSION_PARITIES, SESSION_STATUSES, TestSession, TestSessionQuestion
 from app.models.test_set import ALLOWED_TEST_TYPES, TestSet
 from app.models.user import User
@@ -28,6 +29,12 @@ __all__ = [
     "QuestionTopicMap",
     "ReviewQueue",
     "Subject",
+    "TASK_SOURCES",
+    "TASK_STATUSES",
+    "TASK_TYPES",
+    "DailyTaskPlacement",
+    "SchoolDayOverride",
+    "Task",
     "TestSession",
     "TestSessionQuestion",
     "TestSet",

@@ -86,6 +86,11 @@ def _complete_session(db: Session, session: TestSession, *, ended_at: datetime):
             latest[qid].result = verdict  # fill blank (NULL -> value); evidence untouched
     session.ended_at = ended_at
     session.status = "pending_correction" if score.totals.pending else "completed"
+    if session.task_id is not None:
+        # Phase 5: finishing the linked session completes its test task.
+        from app.repositories import planner as planner_repo
+
+        planner_repo.complete_task_if_open(db, session.task_id, completed_at=ended_at)
     db.flush()
     return score
 

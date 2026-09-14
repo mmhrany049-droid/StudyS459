@@ -6,6 +6,7 @@ import {
   fetchWeekGoal,
   patchGoal,
 } from "@/api/goals";
+import { createTask, fetchDay, putPlacements } from "@/api/planner";
 import type { Book, TreeNode } from "@/types/books";
 import type { CandidateTask, GoalItemIn, GoalType, WeekGoal } from "@/types/goals";
 
@@ -91,6 +92,39 @@ export default function Goals() {
       setMissing(false);
       const c = await fetchCandidates(g.id);
       setCandidates(c.items);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "خطای نامشخص");
+    }
+  };
+
+  /** Turn a candidate into a task placed at the end of today. */
+  const scheduleToday = async (c: CandidateTask) => {
+    setError(null);
+    try {
+      const today = todayISO();
+      const fromGoal = c.source_item_ids.length > 0;
+      const fromWeak = !fromGoal && c.sources.includes("weakness");
+      const task = await createTask({
+        task_type: c.kind === "test" ? "test" : "review",
+        title: `${c.kind === "test" ? "تست" : "مرور"}: ${c.title}`,
+        source_type: fromGoal ? "goal" : fromWeak ? "weakness" : "manual",
+        source_id: fromGoal ? c.source_item_ids[0] : fromWeak ? c.node_id : null,
+        node_id: c.node_id,
+        question_count: c.kind === "test" ? c.suggested_count : null,
+        parity: c.kind === "test" ? c.suggested_parity : null,
+        priority: c.priority_score,
+        estimated_minutes: c.suggested_count * 2, // UI default: ~2 min/question
+        recommendation_reason: c.recommendation_reason,
+      });
+      const dayPlan = await fetchDay(today);
+      const rows = dayPlan.placements.map((p) => ({
+        task_id: p.task.id,
+        date: today,
+        position: p.position,
+      }));
+      rows.push({ task_id: task.id, date: today, position: rows.length });
+      await putPlacements(rows, [today]);
+      setCandidates(candidates.filter((x) => x.node_id !== c.node_id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "خطای نامشخص");
     }
@@ -191,8 +225,15 @@ export default function Goals() {
                       <span className="font-medium">
                         {c.kind === "test" ? "📝" : "🔁"} {c.title}
                       </span>
-                      <span className="text-xs text-slate-500 tabular-nums">
+                      <span className="flex items-center gap-2 text-xs text-slate-500 tabular-nums">
                         {c.suggested_count} سؤال — {PARITY_FA[c.suggested_parity]}
+                        <button
+                          type="button"
+                          onClick={() => void scheduleToday(c)}
+                          className="rounded bg-slate-900 px-2 py-0.5 text-white"
+                        >
+                          + برنامه امروز
+                        </button>
                       </span>
                     </div>
                     <p className="text-xs text-slate-500">{c.path}</p>

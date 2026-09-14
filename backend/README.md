@@ -121,6 +121,28 @@ candidates merge goal/weakness/review sources with a Persian
 `recommendation_reason`; inactive books yield progress but no candidates;
 tasks/placements tables arrive with the Planner (Phase 5).
 
+## Planner (Phase 5)
+
+Tasks + user-owned placements + capacity (spec 02/08). Friday plans the
+Sat..Fri week; mid-week edits stay valid till Friday.
+
+```bash
+curl -s localhost:8000/planner/day/2026-09-12 | head -c 300; echo
+```
+
+Key endpoints: `POST /tasks` (test pins node/count/range/parity),
+`PATCH /tasks/{id}` (validated status transitions), `POST
+/tasks/{id}/complete` (idempotent), `PUT /planner/placements` (wholesale
+replace per date present; `dates` can clear a day), `GET
+/planner/day/{date}`, `GET /planner/week/{week}` (days + unplaced +
+catch-up queue), `POST /school-day-overrides`.
+
+Rules: Sat..Wed school days (90 min), Thu/Fri free (240 min); override
+flips any date («مدرسه نمی‌روم»); workload sums OPEN tasks only;
+over-capacity warns with a breakdown and never deletes; finishing a
+linked test session auto-completes its task; `homework`/`exam` task
+sources activate in Phase 6.
+
 ## Structure (spec 12)
 
 ```
