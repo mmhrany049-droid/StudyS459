@@ -7,6 +7,7 @@ from app.models.node_parity_state import NodeParityState
 from app.models.question import Question
 from app.models.question_attempt import QuestionAttempt
 from app.models.question_topic_map import QuestionTopicMap
+from app.models.review_queue import ReviewQueue
 from app.models.subject import Subject
 from app.models.test_session import SESSION_PARITIES, SESSION_STATUSES, TestSession, TestSessionQuestion
 from app.models.test_set import ALLOWED_TEST_TYPES, TestSet
@@ -24,6 +25,7 @@ __all__ = [
     "Question",
     "QuestionAttempt",
     "QuestionTopicMap",
+    "ReviewQueue",
     "Subject",
     "TestSession",
     "TestSessionQuestion",

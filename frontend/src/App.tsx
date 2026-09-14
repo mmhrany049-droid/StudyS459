@@ -4,6 +4,8 @@ import BookDetail from "@/pages/BookDetail";
 import Books from "@/pages/Books";
 import Dashboard from "@/pages/Dashboard";
 import Placeholder from "@/pages/Placeholder";
+import Progress from "@/pages/Progress";
+import QuestionHistory from "@/pages/QuestionHistory";
 import TestResult from "@/pages/TestResult";
 import TestSession from "@/pages/TestSession";
 import TestSetup from "@/pages/TestSetup";
@@ -18,7 +20,8 @@ export default function App() {
         <Route path="test" element={<TestSetup />} />
         <Route path="test/:id" element={<TestSession />} />
         <Route path="test/:id/result" element={<TestResult />} />
-        <Route path="progress" element={<Placeholder title="پیشرفت" phase="Phase 3" />} />
+        <Route path="progress" element={<Progress />} />
+        <Route path="questions/:id" element={<QuestionHistory />} />
         <Route path="books" element={<Books />} />
         <Route path="books/:id" element={<BookDetail />} />
         <Route

@@ -187,9 +187,12 @@ export default function TestResult() {
           {questions.map((q) => (
             <li key={q.question_id} className="flex flex-wrap items-center gap-2 border-t border-slate-100 py-1">
               <span className="font-semibold">#{q.display_order}</span>
-              <span className="text-slate-500">
-                {q.test_set_title} — سؤال {q.sequence_no}
-              </span>
+              <Link
+                to={`/questions/${q.question_id}`}
+                className="text-slate-500 hover:text-blue-700 hover:underline"
+              >
+                {q.test_set_title} — سؤال {q.sequence_no} (سابقه)
+              </Link>
               <span>
                 پاسخ شما: <strong>{q.answer ?? "نزده"}</strong>
               </span>

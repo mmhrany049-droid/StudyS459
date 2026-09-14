@@ -80,6 +80,27 @@ Persian message + counts); timed requires `time_limit_seconds > 0`; untimed
 forbids it; timeout auto-completes with `ended_at = deadline` (deterministic);
 answer keys never leak to clients; sessions on inactive books -> `409`.
 
+## Analytics (Phase 3)
+
+Live computation from finalized attempts (spec 07); no snapshot tables in v1.
+
+```bash
+curl -s localhost:8000/progress/overview | head -c 300; echo
+```
+
+Key endpoints: `GET /progress/overview` (global = ACTIVE books only),
+`GET /progress/books/{id}` (topic table, every node incl. chapters),
+`GET /progress/nodes/{id}` (drill-down), `GET /progress/questions/{id}`
+(full append-only history), `GET /analytics/trends?days=&group_by=day|week`
+(user timezone, weeks start Saturday), `GET /analytics/weaknesses?limit=&min_volume=`.
+
+Definitions: volume = finalized question-instances; coverage = distinct
+questions seen in FINISHED sessions / pool (in-progress excluded);
+accuracy = correct / (correct + wrong), pending never counted. Weakness
+score = (wrong + 0.5 x unanswered) / volume; all-correct topics are hidden.
+Finish/correction populate `review_queue` (wrong -> high, unanswered -> normal,
+one open row per question+reason).
+
 ## Structure (spec 12)
 
 ```

@@ -9,6 +9,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
+from app.analytics.review_queue import populate_for_correction, populate_for_session
 from app.db import utcnow
 from app.domain.test_selection import (
     EVEN,
@@ -71,8 +72,8 @@ def _is_session_expired(session: TestSession, now: datetime) -> bool:
     )
 
 
-def _complete_session(db: Session, session: TestSession, *, ended_at: datetime) -> None:
-    """Score latest attempts, fill verdicts, flip status. No new rows."""
+def _complete_session(db: Session, session: TestSession, *, ended_at: datetime):
+    """Score latest attempts, fill verdicts, flip status. Returns the score."""
     question_ids = repo.get_session_question_ids(db, session.id)
     detail = repo.get_session_questions_detail(db, session.id)
     keys = {q.id: q.answer_key for _, q, _ in detail}
@@ -86,6 +87,7 @@ def _complete_session(db: Session, session: TestSession, *, ended_at: datetime) 
     session.ended_at = ended_at
     session.status = "pending_correction" if score.totals.pending else "completed"
     db.flush()
+    return score
 
 
 def _build_view(db: Session, session: TestSession, *, now: datetime) -> SessionView:
@@ -320,7 +322,8 @@ def submit_answers(
     if _is_session_expired(session, now):
         assert session.time_limit_seconds is not None
         try:
-            _complete_session(db, session, ended_at=deadline(session.started_at, session.time_limit_seconds))
+            score = _complete_session(db, session, ended_at=deadline(session.started_at, session.time_limit_seconds))
+            populate_for_session(db, user_id=user_id, buckets=score.buckets)
             db.commit()
         except Exception:
             db.rollback()
@@ -380,7 +383,8 @@ def finish_session(db: Session, *, user_id: int, session_id: int) -> SessionView
     else:
         ended = now
     try:
-        _complete_session(db, session, ended_at=ended)
+        score = _complete_session(db, session, ended_at=ended)
+        populate_for_session(db, user_id=user_id, buckets=score.buckets)
         db.commit()
     except Exception:
         db.rollback()
@@ -420,6 +424,9 @@ def submit_corrections(
                     details={"question_id": item.question_id},
                 )
             attempt.result = item.result
+            populate_for_correction(
+                db, user_id=user_id, question_id=item.question_id, result=item.result
+            )
         db.flush()
         remaining = sum(
             1 for a in repo.latest_attempts_by_question(db, session.id).values()

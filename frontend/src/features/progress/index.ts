@@ -1,2 +1,2 @@
-/** progress feature module — filled from Phase 1+ (spec 11/12). */
-export {};
+/** Progress feature (Phase 3). */
+export { default as MetricBar } from "./components/MetricBar";
