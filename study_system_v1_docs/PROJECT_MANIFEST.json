@@ -1,0 +1,38 @@
+{
+  "authorization_code": 459,
+  "version": "1.0",
+  "document_count": 21,
+  "language": "fa-IR",
+  "initial_scope": {
+    "country": "Iran",
+    "grade": 11,
+    "track": "mathematics",
+    "user_mode": "single_user"
+  },
+  "stack": {
+    "frontend": ["React", "Vite", "TypeScript", "Tailwind CSS"],
+    "backend": ["Python", "FastAPI", "Pydantic", "SQLAlchemy"],
+    "database": ["SQLite initially", "PostgreSQL-ready"],
+    "integration": ["Telegram Bot API (optional add-on)"]
+  },
+  "critical_rules": [
+    "config-driven book hierarchy",
+    "stable book/question IDs",
+    "multi-topic question mapping",
+    "range + odd/even selection",
+    "timed and untimed modes",
+    "correct/wrong/unanswered are distinct",
+    "test history is append-only",
+    "coverage is separate from accuracy",
+    "weekly count and topic goals are independent",
+    "main planning on Friday for the week",
+    "Saturday-Wednesday normal planning",
+    "Thursday-Friday catch-up",
+    "user controls final task placement",
+    "schedule-aware capacity",
+    "school day override increases capacity",
+    "Iranian school week and seasons",
+    "reward system with points, streak and badges",
+    "Telegram is optional and non-essential"
+  ]
+}
