@@ -39,6 +39,25 @@ Every schema change ships with a migration (spec 16 master prompt).
 The DB URL always comes from `DATABASE_URL` (single source of truth);
 override per run with `alembic -x db_url=<URL> ...`.
 
+## Book Engine (Phase 1)
+
+Config-driven books (spec 05): `book_configs/*.json` + `POST /books/import`.
+Schema, rules and sample-data warnings: [`book_configs/README.md`](book_configs/README.md).
+
+```bash
+# Import the three sample books (idempotent — re-runs are no-ops):
+for f in book_configs/*.json; do
+  curl -s -X POST localhost:8000/books/import -H 'Content-Type: application/json' -d @"$f"
+  echo
+done
+curl -s localhost:8000/books | head -c 400; echo
+```
+
+Key endpoints: `GET /books`, `GET /books/{id}`, `POST /books/import`,
+`POST|DELETE /users/me/books/{id}/activate`,
+`GET /books/{id}/nodes`, `GET /nodes/{id}/children`.
+Deactivation never deletes history (spec 05/13).
+
 ## Structure (spec 12)
 
 ```

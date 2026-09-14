@@ -1,0 +1,305 @@
+{
+  "book": {
+    "stable_key": "hesab1_olgoo",
+    "title": "حسابان ۱",
+    "publisher": "نشر الگو",
+    "grade": 11,
+    "track": "mathematics",
+    "edition": "1404",
+    "config_version": 1,
+    "subject": {
+      "name": "حسابان",
+      "type": "specialized"
+    }
+  },
+  "node_types": [
+    "chapter",
+    "lesson",
+    "section"
+  ],
+  "difficulty_levels": [
+    "L1",
+    "L2",
+    "L3"
+  ],
+  "nodes": [
+    {
+      "key": "ch1",
+      "type": "chapter",
+      "title": "فصل ۱: جبر و معادله",
+      "order": 1
+    },
+    {
+      "key": "ch1_les1",
+      "type": "lesson",
+      "title": "درس ۱: معادله درجه دوم",
+      "order": 1,
+      "parent": "ch1"
+    },
+    {
+      "key": "ch1_les1_sec1",
+      "type": "section",
+      "title": "بخش ۱: حل معادله درجه دوم",
+      "order": 1,
+      "parent": "ch1_les1"
+    },
+    {
+      "key": "ch1_les1_sec2",
+      "type": "section",
+      "title": "بخش ۲: روابط بین ریشه‌ها",
+      "order": 2,
+      "parent": "ch1_les1"
+    },
+    {
+      "key": "ch1_les2",
+      "type": "lesson",
+      "title": "درس ۲: معادلات گویا و گنگ",
+      "order": 2,
+      "parent": "ch1"
+    },
+    {
+      "key": "ch1_les2_sec1",
+      "type": "section",
+      "title": "بخش ۱: معادلات گویا",
+      "order": 1,
+      "parent": "ch1_les2"
+    },
+    {
+      "key": "ch1_les2_sec2",
+      "type": "section",
+      "title": "بخش ۲: معادلات گنگ",
+      "order": 2,
+      "parent": "ch1_les2"
+    },
+    {
+      "key": "ch2",
+      "type": "chapter",
+      "title": "فصل ۲: تابع",
+      "order": 2
+    },
+    {
+      "key": "ch2_les1",
+      "type": "lesson",
+      "title": "درس ۱: مفاهیم پایه تابع",
+      "order": 1,
+      "parent": "ch2"
+    },
+    {
+      "key": "ch2_les1_sec1",
+      "type": "section",
+      "title": "بخش ۱: دامنه و برد",
+      "order": 1,
+      "parent": "ch2_les1"
+    },
+    {
+      "key": "ch2_les1_sec2",
+      "type": "section",
+      "title": "بخش ۲: ضابطه و نمودار",
+      "order": 2,
+      "parent": "ch2_les1"
+    },
+    {
+      "key": "ch2_les2",
+      "type": "lesson",
+      "title": "درس ۲: انواع تابع",
+      "order": 2,
+      "parent": "ch2"
+    },
+    {
+      "key": "ch2_les2_sec1",
+      "type": "section",
+      "title": "بخش ۱: تابع خطی و درجه دوم",
+      "order": 1,
+      "parent": "ch2_les2"
+    },
+    {
+      "key": "ch2_les2_sec2",
+      "type": "section",
+      "title": "بخش ۲: تابع یک‌به‌یک و وارون",
+      "order": 2,
+      "parent": "ch2_les2"
+    }
+  ],
+  "test_sets": [
+    {
+      "key": "ch1_les1_sec1_drill",
+      "title": "تمرین بخش ۱ درس ۱ فصل ۱",
+      "test_type": "normal",
+      "node": "ch1_les1_sec1"
+    },
+    {
+      "key": "ch1_les1_sec2_drill",
+      "title": "تمرین بخش ۲ درس ۱ فصل ۱",
+      "test_type": "normal",
+      "node": "ch1_les1_sec2"
+    },
+    {
+      "key": "ch1_les1_concours",
+      "title": "سؤالات کنکور درس ۱ فصل ۱",
+      "test_type": "concours",
+      "node": "ch1_les1"
+    },
+    {
+      "key": "ch1_les2_sec1_drill",
+      "title": "تمرین بخش ۱ درس ۲ فصل ۱",
+      "test_type": "normal",
+      "node": "ch1_les2_sec1"
+    },
+    {
+      "key": "ch1_les2_sec2_drill",
+      "title": "تمرین بخش ۲ درس ۲ فصل ۱",
+      "test_type": "normal",
+      "node": "ch1_les2_sec2"
+    },
+    {
+      "key": "ch1_les2_concours",
+      "title": "سؤالات کنکور درس ۲ فصل ۱",
+      "test_type": "concours",
+      "node": "ch1_les2"
+    },
+    {
+      "key": "ch2_les1_sec1_drill",
+      "title": "تمرین بخش ۱ درس ۱ فصل ۲",
+      "test_type": "normal",
+      "node": "ch2_les1_sec1"
+    },
+    {
+      "key": "ch2_les1_sec2_drill",
+      "title": "تمرین بخش ۲ درس ۱ فصل ۲",
+      "test_type": "normal",
+      "node": "ch2_les1_sec2"
+    },
+    {
+      "key": "ch2_les1_concours",
+      "title": "سؤالات کنکور درس ۱ فصل ۲",
+      "test_type": "concours",
+      "node": "ch2_les1"
+    },
+    {
+      "key": "ch2_les2_sec1_drill",
+      "title": "تمرین بخش ۱ درس ۲ فصل ۲",
+      "test_type": "normal",
+      "node": "ch2_les2_sec1"
+    },
+    {
+      "key": "ch2_les2_sec2_drill",
+      "title": "تمرین بخش ۲ درس ۲ فصل ۲",
+      "test_type": "normal",
+      "node": "ch2_les2_sec2"
+    },
+    {
+      "key": "ch2_les2_concours",
+      "title": "سؤالات کنکور درس ۲ فصل ۲",
+      "test_type": "concours",
+      "node": "ch2_les2"
+    }
+  ],
+  "sample_data": true,
+  "notes": "داده نمونه برای Phase 1 (فصل‌های ۱ و ۲) — ساختار و کلیدها واقعی نیستند و باید با کتاب واقعی جایگزین شوند.",
+  "questions": [
+    {"test_set": "ch1_les1_sec1_drill", "sequence_no": 1, "answer_key": "1", "difficulty": "L1"},
+    {"test_set": "ch1_les1_sec1_drill", "sequence_no": 2, "answer_key": "3", "difficulty": "L1"},
+    {"test_set": "ch1_les1_sec1_drill", "sequence_no": 3, "answer_key": "4", "difficulty": "L1"},
+    {"test_set": "ch1_les1_sec1_drill", "sequence_no": 4, "answer_key": "3", "difficulty": "L1"},
+    {"test_set": "ch1_les1_sec1_drill", "sequence_no": 5, "answer_key": "1", "difficulty": "L2"},
+    {"test_set": "ch1_les1_sec1_drill", "sequence_no": 6, "answer_key": "4", "difficulty": "L2"},
+    {"test_set": "ch1_les1_sec1_drill", "sequence_no": 7, "answer_key": "3", "difficulty": "L2"},
+    {"test_set": "ch1_les1_sec1_drill", "sequence_no": 8, "answer_key": "3", "difficulty": "L3"},
+    {"test_set": "ch1_les1_sec1_drill", "sequence_no": 9, "answer_key": "3", "difficulty": "L3"},
+    {"test_set": "ch1_les1_sec1_drill", "sequence_no": 10, "answer_key": "2", "difficulty": "L3"},
+    {"test_set": "ch1_les1_sec2_drill", "sequence_no": 1, "answer_key": "3", "difficulty": "L1"},
+    {"test_set": "ch1_les1_sec2_drill", "sequence_no": 2, "answer_key": "2", "difficulty": "L1"},
+    {"test_set": "ch1_les1_sec2_drill", "sequence_no": 3, "answer_key": "4", "difficulty": "L1"},
+    {"test_set": "ch1_les1_sec2_drill", "sequence_no": 4, "answer_key": "1", "difficulty": "L1"},
+    {"test_set": "ch1_les1_sec2_drill", "sequence_no": 5, "answer_key": "4", "difficulty": "L2"},
+    {"test_set": "ch1_les1_sec2_drill", "sequence_no": 6, "answer_key": "4", "difficulty": "L2"},
+    {"test_set": "ch1_les1_sec2_drill", "sequence_no": 7, "answer_key": "3", "difficulty": "L2"},
+    {"test_set": "ch1_les1_sec2_drill", "sequence_no": 8, "answer_key": "2", "difficulty": "L3"},
+    {"test_set": "ch1_les1_sec2_drill", "sequence_no": 9, "answer_key": "3", "difficulty": "L3"},
+    {"test_set": "ch1_les1_sec2_drill", "sequence_no": 10, "answer_key": "3", "difficulty": "L3"},
+    {"test_set": "ch1_les1_concours", "sequence_no": 1, "answer_key": "3"},
+    {"test_set": "ch1_les1_concours", "sequence_no": 2, "answer_key": "1"},
+    {"test_set": "ch1_les1_concours", "sequence_no": 3, "answer_key": "1"},
+    {"test_set": "ch1_les1_concours", "sequence_no": 4, "answer_key": "4"},
+    {"test_set": "ch1_les1_concours", "sequence_no": 5, "answer_key": "4"},
+    {"test_set": "ch1_les1_concours", "sequence_no": 6, "answer_key": "4"},
+    {"test_set": "ch1_les2_sec1_drill", "sequence_no": 1, "answer_key": "4", "difficulty": "L1"},
+    {"test_set": "ch1_les2_sec1_drill", "sequence_no": 2, "answer_key": "1", "difficulty": "L1"},
+    {"test_set": "ch1_les2_sec1_drill", "sequence_no": 3, "answer_key": "1", "difficulty": "L1"},
+    {"test_set": "ch1_les2_sec1_drill", "sequence_no": 4, "answer_key": "2", "difficulty": "L1"},
+    {"test_set": "ch1_les2_sec1_drill", "sequence_no": 5, "answer_key": "4", "difficulty": "L2"},
+    {"test_set": "ch1_les2_sec1_drill", "sequence_no": 6, "answer_key": "4", "difficulty": "L2"},
+    {"test_set": "ch1_les2_sec1_drill", "sequence_no": 7, "answer_key": "1", "difficulty": "L2"},
+    {"test_set": "ch1_les2_sec1_drill", "sequence_no": 8, "answer_key": "1", "difficulty": "L3"},
+    {"test_set": "ch1_les2_sec1_drill", "sequence_no": 9, "answer_key": "1", "difficulty": "L3"},
+    {"test_set": "ch1_les2_sec1_drill", "sequence_no": 10, "answer_key": "2", "difficulty": "L3"},
+    {"test_set": "ch1_les2_sec2_drill", "sequence_no": 1, "answer_key": "2", "difficulty": "L1"},
+    {"test_set": "ch1_les2_sec2_drill", "sequence_no": 2, "answer_key": "3", "difficulty": "L1"},
+    {"test_set": "ch1_les2_sec2_drill", "sequence_no": 3, "answer_key": "4", "difficulty": "L1"},
+    {"test_set": "ch1_les2_sec2_drill", "sequence_no": 4, "answer_key": "1", "difficulty": "L1"},
+    {"test_set": "ch1_les2_sec2_drill", "sequence_no": 5, "answer_key": "4", "difficulty": "L2"},
+    {"test_set": "ch1_les2_sec2_drill", "sequence_no": 6, "answer_key": "4", "difficulty": "L2"},
+    {"test_set": "ch1_les2_sec2_drill", "sequence_no": 7, "answer_key": "4", "difficulty": "L2"},
+    {"test_set": "ch1_les2_sec2_drill", "sequence_no": 8, "answer_key": "3", "difficulty": "L3"},
+    {"test_set": "ch1_les2_sec2_drill", "sequence_no": 9, "answer_key": "1", "difficulty": "L3"},
+    {"test_set": "ch1_les2_sec2_drill", "sequence_no": 10, "answer_key": "4", "difficulty": "L3"},
+    {"test_set": "ch1_les2_concours", "sequence_no": 1, "answer_key": "4"},
+    {"test_set": "ch1_les2_concours", "sequence_no": 2, "answer_key": "1"},
+    {"test_set": "ch1_les2_concours", "sequence_no": 3, "answer_key": "2"},
+    {"test_set": "ch1_les2_concours", "sequence_no": 4, "answer_key": "2"},
+    {"test_set": "ch1_les2_concours", "sequence_no": 5, "answer_key": "2"},
+    {"test_set": "ch1_les2_concours", "sequence_no": 6, "answer_key": "3"},
+    {"test_set": "ch2_les1_sec1_drill", "sequence_no": 1, "answer_key": "3", "difficulty": "L1"},
+    {"test_set": "ch2_les1_sec1_drill", "sequence_no": 2, "answer_key": "4", "difficulty": "L1"},
+    {"test_set": "ch2_les1_sec1_drill", "sequence_no": 3, "answer_key": "1", "difficulty": "L1"},
+    {"test_set": "ch2_les1_sec1_drill", "sequence_no": 4, "answer_key": "3", "difficulty": "L1"},
+    {"test_set": "ch2_les1_sec1_drill", "sequence_no": 5, "answer_key": "2", "difficulty": "L2"},
+    {"test_set": "ch2_les1_sec1_drill", "sequence_no": 6, "answer_key": "2", "difficulty": "L2"},
+    {"test_set": "ch2_les1_sec1_drill", "sequence_no": 7, "answer_key": "1", "difficulty": "L2"},
+    {"test_set": "ch2_les1_sec1_drill", "sequence_no": 8, "answer_key": "4", "difficulty": "L3"},
+    {"test_set": "ch2_les1_sec1_drill", "sequence_no": 9, "answer_key": "1", "difficulty": "L3"},
+    {"test_set": "ch2_les1_sec1_drill", "sequence_no": 10, "answer_key": "1", "difficulty": "L3"},
+    {"test_set": "ch2_les1_sec2_drill", "sequence_no": 1, "answer_key": "4", "difficulty": "L1"},
+    {"test_set": "ch2_les1_sec2_drill", "sequence_no": 2, "answer_key": "2", "difficulty": "L1"},
+    {"test_set": "ch2_les1_sec2_drill", "sequence_no": 3, "answer_key": "4", "difficulty": "L1"},
+    {"test_set": "ch2_les1_sec2_drill", "sequence_no": 4, "answer_key": "1", "difficulty": "L1"},
+    {"test_set": "ch2_les1_sec2_drill", "sequence_no": 5, "answer_key": "4", "difficulty": "L2"},
+    {"test_set": "ch2_les1_sec2_drill", "sequence_no": 6, "answer_key": "2", "difficulty": "L2"},
+    {"test_set": "ch2_les1_sec2_drill", "sequence_no": 7, "answer_key": "1", "difficulty": "L2"},
+    {"test_set": "ch2_les1_sec2_drill", "sequence_no": 8, "answer_key": "1", "difficulty": "L3"},
+    {"test_set": "ch2_les1_sec2_drill", "sequence_no": 9, "answer_key": "4", "difficulty": "L3"},
+    {"test_set": "ch2_les1_sec2_drill", "sequence_no": 10, "answer_key": "2", "difficulty": "L3"},
+    {"test_set": "ch2_les1_concours", "sequence_no": 1, "answer_key": "3"},
+    {"test_set": "ch2_les1_concours", "sequence_no": 2, "answer_key": "2"},
+    {"test_set": "ch2_les1_concours", "sequence_no": 3, "answer_key": "2"},
+    {"test_set": "ch2_les1_concours", "sequence_no": 4, "answer_key": "3"},
+    {"test_set": "ch2_les1_concours", "sequence_no": 5, "answer_key": "4"},
+    {"test_set": "ch2_les1_concours", "sequence_no": 6, "answer_key": "2"},
+    {"test_set": "ch2_les2_sec1_drill", "sequence_no": 1, "answer_key": "3", "difficulty": "L1"},
+    {"test_set": "ch2_les2_sec1_drill", "sequence_no": 2, "answer_key": "1", "difficulty": "L1"},
+    {"test_set": "ch2_les2_sec1_drill", "sequence_no": 3, "answer_key": "2", "difficulty": "L1"},
+    {"test_set": "ch2_les2_sec1_drill", "sequence_no": 4, "answer_key": "2", "difficulty": "L1"},
+    {"test_set": "ch2_les2_sec1_drill", "sequence_no": 5, "answer_key": "1", "difficulty": "L2"},
+    {"test_set": "ch2_les2_sec1_drill", "sequence_no": 6, "answer_key": "4", "difficulty": "L2"},
+    {"test_set": "ch2_les2_sec1_drill", "sequence_no": 7, "answer_key": "1", "difficulty": "L2"},
+    {"test_set": "ch2_les2_sec1_drill", "sequence_no": 8, "answer_key": "1", "difficulty": "L3"},
+    {"test_set": "ch2_les2_sec1_drill", "sequence_no": 9, "answer_key": "3", "difficulty": "L3"},
+    {"test_set": "ch2_les2_sec1_drill", "sequence_no": 10, "answer_key": "2", "difficulty": "L3"},
+    {"test_set": "ch2_les2_sec2_drill", "sequence_no": 1, "answer_key": "4", "difficulty": "L1"},
+    {"test_set": "ch2_les2_sec2_drill", "sequence_no": 2, "answer_key": "3", "difficulty": "L1"},
+    {"test_set": "ch2_les2_sec2_drill", "sequence_no": 3, "answer_key": "2", "difficulty": "L1"},
+    {"test_set": "ch2_les2_sec2_drill", "sequence_no": 4, "answer_key": "2", "difficulty": "L1"},
+    {"test_set": "ch2_les2_sec2_drill", "sequence_no": 5, "answer_key": "1", "difficulty": "L2"},
+    {"test_set": "ch2_les2_sec2_drill", "sequence_no": 6, "answer_key": "4", "difficulty": "L2"},
+    {"test_set": "ch2_les2_sec2_drill", "sequence_no": 7, "answer_key": "2", "difficulty": "L2"},
+    {"test_set": "ch2_les2_sec2_drill", "sequence_no": 8, "answer_key": "2", "difficulty": "L3"},
+    {"test_set": "ch2_les2_sec2_drill", "sequence_no": 9, "answer_key": "1", "difficulty": "L3"},
+    {"test_set": "ch2_les2_sec2_drill", "sequence_no": 10, "answer_key": "1", "difficulty": "L3"},
+    {"test_set": "ch2_les2_concours", "sequence_no": 1, "answer_key": "3"},
+    {"test_set": "ch2_les2_concours", "sequence_no": 2, "answer_key": "2"},
+    {"test_set": "ch2_les2_concours", "sequence_no": 3, "answer_key": "1"},
+    {"test_set": "ch2_les2_concours", "sequence_no": 4, "answer_key": "2"},
+    {"test_set": "ch2_les2_concours", "sequence_no": 5, "answer_key": "3"},
+    {"test_set": "ch2_les2_concours", "sequence_no": 6, "answer_key": "4"}
+  ]
+}

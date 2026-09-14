@@ -13,8 +13,8 @@ from sqlalchemy import engine_from_config, pool
 from app.config import get_settings
 from app.db import Base  # noqa: F401  (ensures Base.metadata is the autogenerate target)
 
-# NOTE: Phase 1+ must import model modules here (e.g. `import app.models.book`)
-# so autogenerate sees their tables. Deliberately none yet (Phase 0).
+# Import all models so autogenerate sees their tables (Phase 1+).
+from app import models  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

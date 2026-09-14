@@ -1,2 +1,3 @@
-/** books feature module — filled from Phase 1+ (spec 11/12). */
-export {};
+/** Books feature (Phase 1): list/detail/tree components. */
+export { default as BookCard } from "./components/BookCard";
+export { default as NodeTree } from "./components/NodeTree";

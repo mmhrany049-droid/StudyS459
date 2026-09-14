@@ -1,0 +1,13 @@
+{
+  "config": "phys2_kheilisabz.json",
+  "seed": 45903,
+  "specs": [
+    {"test_set": "ch1_sec1_drill", "count": 12},
+    {"test_set": "ch1_sec2_drill", "count": 12},
+    {"test_set": "ch1_sec3_drill", "count": 12},
+    {"test_set": "ch1_exam", "count": 12},
+    {"test_set": "ch2_sec1_drill", "count": 12},
+    {"test_set": "ch2_sec2_drill", "count": 12},
+    {"test_set": "ch2_exam", "count": 12}
+  ]
+}

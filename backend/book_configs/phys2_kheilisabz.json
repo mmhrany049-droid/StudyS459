@@ -1,0 +1,271 @@
+{
+  "book": {
+    "stable_key": "phys2_kheilisabz",
+    "title": "فیزیک ۲",
+    "publisher": "خیلی سبز",
+    "grade": 11,
+    "track": "mathematics",
+    "edition": "1404",
+    "config_version": 1,
+    "subject": {
+      "name": "فیزیک",
+      "type": "specialized"
+    }
+  },
+  "node_types": [
+    "chapter",
+    "section",
+    "subsection"
+  ],
+  "nodes": [
+    {
+      "key": "ch1",
+      "type": "chapter",
+      "title": "فصل ۱: الکتریسیته ساکن",
+      "order": 1
+    },
+    {
+      "key": "ch1_sec1",
+      "type": "section",
+      "title": "بخش ۱: بار الکتریکی",
+      "order": 1,
+      "parent": "ch1"
+    },
+    {
+      "key": "ch1_sec1_sub1",
+      "type": "subsection",
+      "title": "زیربخش ۱: کوانتیده بودن بار",
+      "order": 1,
+      "parent": "ch1_sec1"
+    },
+    {
+      "key": "ch1_sec1_sub2",
+      "type": "subsection",
+      "title": "زیربخش ۲: روش‌های باردار کردن اجسام",
+      "order": 2,
+      "parent": "ch1_sec1"
+    },
+    {
+      "key": "ch1_sec2",
+      "type": "section",
+      "title": "بخش ۲: قانون کولن",
+      "order": 2,
+      "parent": "ch1"
+    },
+    {
+      "key": "ch1_sec2_sub1",
+      "type": "subsection",
+      "title": "زیربخش ۱: نیروی بین دو بار نقطه‌ای",
+      "order": 1,
+      "parent": "ch1_sec2"
+    },
+    {
+      "key": "ch1_sec2_sub2",
+      "type": "subsection",
+      "title": "زیربخش ۲: برایند نیروها",
+      "order": 2,
+      "parent": "ch1_sec2"
+    },
+    {
+      "key": "ch1_sec3",
+      "type": "section",
+      "title": "بخش ۳: میدان الکتریکی",
+      "order": 3,
+      "parent": "ch1"
+    },
+    {
+      "key": "ch1_sec3_sub1",
+      "type": "subsection",
+      "title": "زیربخش ۱: شدت میدان",
+      "order": 1,
+      "parent": "ch1_sec3"
+    },
+    {
+      "key": "ch1_sec3_sub2",
+      "type": "subsection",
+      "title": "زیربخش ۲: خطوط میدان",
+      "order": 2,
+      "parent": "ch1_sec3"
+    },
+    {
+      "key": "ch2",
+      "type": "chapter",
+      "title": "فصل ۲: جریان الکتریکی",
+      "order": 2
+    },
+    {
+      "key": "ch2_sec1",
+      "type": "section",
+      "title": "بخش ۱: جریان و مقاومت",
+      "order": 1,
+      "parent": "ch2"
+    },
+    {
+      "key": "ch2_sec1_sub1",
+      "type": "subsection",
+      "title": "زیربخش ۱: شدت جریان",
+      "order": 1,
+      "parent": "ch2_sec1"
+    },
+    {
+      "key": "ch2_sec1_sub2",
+      "type": "subsection",
+      "title": "زیربخش ۲: مقاومت ویژه",
+      "order": 2,
+      "parent": "ch2_sec1"
+    },
+    {
+      "key": "ch2_sec2",
+      "type": "section",
+      "title": "بخش ۲: مدارهای الکتریکی",
+      "order": 2,
+      "parent": "ch2"
+    },
+    {
+      "key": "ch2_sec2_sub1",
+      "type": "subsection",
+      "title": "زیربخش ۱: مدارهای سری",
+      "order": 1,
+      "parent": "ch2_sec2"
+    },
+    {
+      "key": "ch2_sec2_sub2",
+      "type": "subsection",
+      "title": "زیربخش ۲: مدارهای موازی",
+      "order": 2,
+      "parent": "ch2_sec2"
+    }
+  ],
+  "test_sets": [
+    {
+      "key": "ch1_sec1_drill",
+      "title": "تمرین بخش ۱ فصل ۱",
+      "test_type": "normal",
+      "node": "ch1_sec1"
+    },
+    {
+      "key": "ch1_sec2_drill",
+      "title": "تمرین بخش ۲ فصل ۱",
+      "test_type": "normal",
+      "node": "ch1_sec2"
+    },
+    {
+      "key": "ch1_sec3_drill",
+      "title": "تمرین بخش ۳ فصل ۱",
+      "test_type": "normal",
+      "node": "ch1_sec3"
+    },
+    {
+      "key": "ch1_exam",
+      "title": "آزمون فصل ۱",
+      "test_type": "chapter_exam",
+      "node": "ch1"
+    },
+    {
+      "key": "ch2_sec1_drill",
+      "title": "تمرین بخش ۱ فصل ۲",
+      "test_type": "normal",
+      "node": "ch2_sec1"
+    },
+    {
+      "key": "ch2_sec2_drill",
+      "title": "تمرین بخش ۲ فصل ۲",
+      "test_type": "normal",
+      "node": "ch2_sec2"
+    },
+    {
+      "key": "ch2_exam",
+      "title": "آزمون فصل ۲",
+      "test_type": "chapter_exam",
+      "node": "ch2"
+    }
+  ],
+  "sample_data": true,
+  "notes": "داده نمونه برای Phase 1 (فصل‌های ۱ و ۲) — ساختار و کلیدها واقعی نیستند و باید با کتاب واقعی جایگزین شوند.",
+  "questions": [
+    {"test_set": "ch1_sec1_drill", "sequence_no": 1, "answer_key": "1"},
+    {"test_set": "ch1_sec1_drill", "sequence_no": 2, "answer_key": "2"},
+    {"test_set": "ch1_sec1_drill", "sequence_no": 3, "answer_key": "4"},
+    {"test_set": "ch1_sec1_drill", "sequence_no": 4, "answer_key": "4"},
+    {"test_set": "ch1_sec1_drill", "sequence_no": 5, "answer_key": "3"},
+    {"test_set": "ch1_sec1_drill", "sequence_no": 6, "answer_key": "3"},
+    {"test_set": "ch1_sec1_drill", "sequence_no": 7, "answer_key": "3"},
+    {"test_set": "ch1_sec1_drill", "sequence_no": 8, "answer_key": "2"},
+    {"test_set": "ch1_sec1_drill", "sequence_no": 9, "answer_key": "2"},
+    {"test_set": "ch1_sec1_drill", "sequence_no": 10, "answer_key": "1"},
+    {"test_set": "ch1_sec1_drill", "sequence_no": 11, "answer_key": "1"},
+    {"test_set": "ch1_sec1_drill", "sequence_no": 12, "answer_key": "3"},
+    {"test_set": "ch1_sec2_drill", "sequence_no": 1, "answer_key": "4"},
+    {"test_set": "ch1_sec2_drill", "sequence_no": 2, "answer_key": "4"},
+    {"test_set": "ch1_sec2_drill", "sequence_no": 3, "answer_key": "3"},
+    {"test_set": "ch1_sec2_drill", "sequence_no": 4, "answer_key": "3"},
+    {"test_set": "ch1_sec2_drill", "sequence_no": 5, "answer_key": "4"},
+    {"test_set": "ch1_sec2_drill", "sequence_no": 6, "answer_key": "4"},
+    {"test_set": "ch1_sec2_drill", "sequence_no": 7, "answer_key": "3"},
+    {"test_set": "ch1_sec2_drill", "sequence_no": 8, "answer_key": "1"},
+    {"test_set": "ch1_sec2_drill", "sequence_no": 9, "answer_key": "4"},
+    {"test_set": "ch1_sec2_drill", "sequence_no": 10, "answer_key": "2"},
+    {"test_set": "ch1_sec2_drill", "sequence_no": 11, "answer_key": "4"},
+    {"test_set": "ch1_sec2_drill", "sequence_no": 12, "answer_key": "2"},
+    {"test_set": "ch1_sec3_drill", "sequence_no": 1, "answer_key": "4"},
+    {"test_set": "ch1_sec3_drill", "sequence_no": 2, "answer_key": "1"},
+    {"test_set": "ch1_sec3_drill", "sequence_no": 3, "answer_key": "3"},
+    {"test_set": "ch1_sec3_drill", "sequence_no": 4, "answer_key": "4"},
+    {"test_set": "ch1_sec3_drill", "sequence_no": 5, "answer_key": "4"},
+    {"test_set": "ch1_sec3_drill", "sequence_no": 6, "answer_key": "4"},
+    {"test_set": "ch1_sec3_drill", "sequence_no": 7, "answer_key": "2"},
+    {"test_set": "ch1_sec3_drill", "sequence_no": 8, "answer_key": "3"},
+    {"test_set": "ch1_sec3_drill", "sequence_no": 9, "answer_key": "3"},
+    {"test_set": "ch1_sec3_drill", "sequence_no": 10, "answer_key": "1"},
+    {"test_set": "ch1_sec3_drill", "sequence_no": 11, "answer_key": "2"},
+    {"test_set": "ch1_sec3_drill", "sequence_no": 12, "answer_key": "1"},
+    {"test_set": "ch1_exam", "sequence_no": 1, "answer_key": "1"},
+    {"test_set": "ch1_exam", "sequence_no": 2, "answer_key": "4"},
+    {"test_set": "ch1_exam", "sequence_no": 3, "answer_key": "1"},
+    {"test_set": "ch1_exam", "sequence_no": 4, "answer_key": "3"},
+    {"test_set": "ch1_exam", "sequence_no": 5, "answer_key": "2"},
+    {"test_set": "ch1_exam", "sequence_no": 6, "answer_key": "3"},
+    {"test_set": "ch1_exam", "sequence_no": 7, "answer_key": "3"},
+    {"test_set": "ch1_exam", "sequence_no": 8, "answer_key": "4"},
+    {"test_set": "ch1_exam", "sequence_no": 9, "answer_key": "4"},
+    {"test_set": "ch1_exam", "sequence_no": 10, "answer_key": "3"},
+    {"test_set": "ch1_exam", "sequence_no": 11, "answer_key": "3"},
+    {"test_set": "ch1_exam", "sequence_no": 12, "answer_key": "3"},
+    {"test_set": "ch2_sec1_drill", "sequence_no": 1, "answer_key": "4"},
+    {"test_set": "ch2_sec1_drill", "sequence_no": 2, "answer_key": "1"},
+    {"test_set": "ch2_sec1_drill", "sequence_no": 3, "answer_key": "3"},
+    {"test_set": "ch2_sec1_drill", "sequence_no": 4, "answer_key": "3"},
+    {"test_set": "ch2_sec1_drill", "sequence_no": 5, "answer_key": "1"},
+    {"test_set": "ch2_sec1_drill", "sequence_no": 6, "answer_key": "4"},
+    {"test_set": "ch2_sec1_drill", "sequence_no": 7, "answer_key": "2"},
+    {"test_set": "ch2_sec1_drill", "sequence_no": 8, "answer_key": "3"},
+    {"test_set": "ch2_sec1_drill", "sequence_no": 9, "answer_key": "1"},
+    {"test_set": "ch2_sec1_drill", "sequence_no": 10, "answer_key": "4"},
+    {"test_set": "ch2_sec1_drill", "sequence_no": 11, "answer_key": "2"},
+    {"test_set": "ch2_sec1_drill", "sequence_no": 12, "answer_key": "2"},
+    {"test_set": "ch2_sec2_drill", "sequence_no": 1, "answer_key": "4"},
+    {"test_set": "ch2_sec2_drill", "sequence_no": 2, "answer_key": "3"},
+    {"test_set": "ch2_sec2_drill", "sequence_no": 3, "answer_key": "1"},
+    {"test_set": "ch2_sec2_drill", "sequence_no": 4, "answer_key": "2"},
+    {"test_set": "ch2_sec2_drill", "sequence_no": 5, "answer_key": "4"},
+    {"test_set": "ch2_sec2_drill", "sequence_no": 6, "answer_key": "1"},
+    {"test_set": "ch2_sec2_drill", "sequence_no": 7, "answer_key": "1"},
+    {"test_set": "ch2_sec2_drill", "sequence_no": 8, "answer_key": "4"},
+    {"test_set": "ch2_sec2_drill", "sequence_no": 9, "answer_key": "3"},
+    {"test_set": "ch2_sec2_drill", "sequence_no": 10, "answer_key": "3"},
+    {"test_set": "ch2_sec2_drill", "sequence_no": 11, "answer_key": "3"},
+    {"test_set": "ch2_sec2_drill", "sequence_no": 12, "answer_key": "4"},
+    {"test_set": "ch2_exam", "sequence_no": 1, "answer_key": "2"},
+    {"test_set": "ch2_exam", "sequence_no": 2, "answer_key": "3"},
+    {"test_set": "ch2_exam", "sequence_no": 3, "answer_key": "1"},
+    {"test_set": "ch2_exam", "sequence_no": 4, "answer_key": "1"},
+    {"test_set": "ch2_exam", "sequence_no": 5, "answer_key": "4"},
+    {"test_set": "ch2_exam", "sequence_no": 6, "answer_key": "1"},
+    {"test_set": "ch2_exam", "sequence_no": 7, "answer_key": "4"},
+    {"test_set": "ch2_exam", "sequence_no": 8, "answer_key": "1"},
+    {"test_set": "ch2_exam", "sequence_no": 9, "answer_key": "1"},
+    {"test_set": "ch2_exam", "sequence_no": 10, "answer_key": "4"},
+    {"test_set": "ch2_exam", "sequence_no": 11, "answer_key": "4"},
+    {"test_set": "ch2_exam", "sequence_no": 12, "answer_key": "4"}
+  ]
+}

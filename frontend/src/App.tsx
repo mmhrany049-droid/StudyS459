@@ -1,5 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import Layout from "@/components/Layout";
+import BookDetail from "@/pages/BookDetail";
+import Books from "@/pages/Books";
 import Dashboard from "@/pages/Dashboard";
 import Placeholder from "@/pages/Placeholder";
 
@@ -16,7 +18,8 @@ export default function App() {
           element={<Placeholder title="نتیجه تست" phase="Phase 2" />}
         />
         <Route path="progress" element={<Placeholder title="پیشرفت" phase="Phase 3" />} />
-        <Route path="books" element={<Placeholder title="کتاب‌ها" phase="Phase 1" />} />
+        <Route path="books" element={<Books />} />
+        <Route path="books/:id" element={<BookDetail />} />
         <Route
           path="schedule"
           element={<Placeholder title="برنامه مدرسه" phase="Phase 6" />}

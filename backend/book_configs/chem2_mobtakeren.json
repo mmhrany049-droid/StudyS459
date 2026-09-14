@@ -1,0 +1,289 @@
+{
+  "book": {
+    "stable_key": "chem2_mobtakeren",
+    "title": "شیمی ۲",
+    "publisher": "مبتکران",
+    "grade": 11,
+    "track": "mathematics",
+    "edition": "1404",
+    "config_version": 1,
+    "subject": {
+      "name": "شیمی",
+      "type": "specialized"
+    }
+  },
+  "node_types": [
+    "chapter",
+    "title",
+    "subtitle"
+  ],
+  "nodes": [
+    {
+      "key": "ch1",
+      "type": "chapter",
+      "title": "فصل ۱: قدر هدایای زمینی را بدانیم",
+      "order": 1
+    },
+    {
+      "key": "ch1_t1",
+      "type": "title",
+      "title": "هدایای زمینی و ترکیب‌های شیمیایی",
+      "order": 1,
+      "parent": "ch1"
+    },
+    {
+      "key": "ch1_t2",
+      "type": "title",
+      "title": "واکنش‌های شیمیایی و موازنه",
+      "order": 2,
+      "parent": "ch1"
+    },
+    {
+      "key": "ch1_t2_s1",
+      "type": "subtitle",
+      "title": "موازنه به روش وارسی",
+      "order": 1,
+      "parent": "ch1_t2"
+    },
+    {
+      "key": "ch1_t2_s2",
+      "type": "subtitle",
+      "title": "موازنه در واکنش‌های اکسایش-کاهش",
+      "order": 2,
+      "parent": "ch1_t2"
+    },
+    {
+      "key": "ch1_t3",
+      "type": "title",
+      "title": "استوکیومتری و محاسبات مولی",
+      "order": 3,
+      "parent": "ch1"
+    },
+    {
+      "key": "ch1_t4",
+      "type": "title",
+      "title": "مسائل ترکیبی فصل ۱",
+      "order": 4,
+      "parent": "ch1"
+    },
+    {
+      "key": "ch2",
+      "type": "chapter",
+      "title": "فصل ۲: در پی غذای سالم",
+      "order": 2
+    },
+    {
+      "key": "ch2_t1",
+      "type": "title",
+      "title": "درشت‌مغذی‌ها و انرژی غذاها",
+      "order": 1,
+      "parent": "ch2"
+    },
+    {
+      "key": "ch2_t2",
+      "type": "title",
+      "title": "اسیدها و بازها در زندگی روزمره",
+      "order": 2,
+      "parent": "ch2"
+    },
+    {
+      "key": "ch2_t3",
+      "type": "title",
+      "title": "pH و محاسبات آن",
+      "order": 3,
+      "parent": "ch2"
+    },
+    {
+      "key": "ch2_t3_s1",
+      "type": "subtitle",
+      "title": "محاسبه pH اسیدها و بازهای قوی",
+      "order": 1,
+      "parent": "ch2_t3"
+    },
+    {
+      "key": "ch3",
+      "type": "chapter",
+      "title": "فصل ۳: پوشاک، نیازی پایان‌ناپذیر",
+      "order": 3
+    },
+    {
+      "key": "ch3_t1",
+      "type": "title",
+      "title": "پلیمرها و الیاف",
+      "order": 1,
+      "parent": "ch3"
+    },
+    {
+      "key": "ch3_t2",
+      "type": "title",
+      "title": "شیمی آلی مقدماتی",
+      "order": 2,
+      "parent": "ch3"
+    },
+    {
+      "key": "ch3_t2_s1",
+      "type": "subtitle",
+      "title": "هیدروکربن‌ها",
+      "order": 1,
+      "parent": "ch3_t2"
+    }
+  ],
+  "test_sets": [
+    {
+      "key": "ch1_check1",
+      "title": "چکاپ ۱ فصل ۱",
+      "test_type": "checkup"
+    },
+    {
+      "key": "ch1_check2",
+      "title": "چکاپ ۲ فصل ۱",
+      "test_type": "checkup"
+    },
+    {
+      "key": "ch1_exam1",
+      "title": "آزمون جامع ۱ فصل ۱",
+      "test_type": "chapter_exam",
+      "node": "ch1"
+    },
+    {
+      "key": "ch1_exam2",
+      "title": "آزمون جامع ۲ فصل ۱",
+      "test_type": "chapter_exam",
+      "node": "ch1"
+    },
+    {
+      "key": "ch2_check1",
+      "title": "چکاپ ۱ فصل ۲",
+      "test_type": "checkup"
+    },
+    {
+      "key": "ch2_exam1",
+      "title": "آزمون جامع ۱ فصل ۲",
+      "test_type": "chapter_exam",
+      "node": "ch2"
+    },
+    {
+      "key": "ch3_check1",
+      "title": "چکاپ ۱ فصل ۳",
+      "test_type": "checkup"
+    },
+    {
+      "key": "ch3_exam1",
+      "title": "آزمون جامع ۱ فصل ۳",
+      "test_type": "chapter_exam",
+      "node": "ch3"
+    },
+    {
+      "key": "concours1404",
+      "title": "سؤالات کنکور ۱۴۰۴",
+      "test_type": "concours"
+    }
+  ],
+  "sample_data": true,
+  "notes": "داده نمونه برای Phase 1 — ساختار و کلیدها واقعی نیستند و باید با کتاب واقعی جایگزین شوند.",
+  "questions": [
+    {"test_set": "ch1_check1", "sequence_no": 1, "answer_key": "3", "topics": ["ch1_t1", "ch1_t2"]},
+    {"test_set": "ch1_check1", "sequence_no": 2, "answer_key": "3", "topics": ["ch1_t1", "ch1_t2"]},
+    {"test_set": "ch1_check1", "sequence_no": 3, "answer_key": "2", "topics": ["ch1_t1", "ch1_t2"]},
+    {"test_set": "ch1_check1", "sequence_no": 4, "answer_key": "3", "topics": ["ch1_t1", "ch1_t2"]},
+    {"test_set": "ch1_check1", "sequence_no": 5, "answer_key": "1", "topics": ["ch1_t1", "ch1_t2"]},
+    {"test_set": "ch1_check1", "sequence_no": 6, "answer_key": "2", "topics": ["ch1_t1", "ch1_t2"]},
+    {"test_set": "ch1_check1", "sequence_no": 7, "answer_key": "2", "topics": ["ch1_t1", "ch1_t2"]},
+    {"test_set": "ch1_check1", "sequence_no": 8, "answer_key": "1", "topics": ["ch1_t1", "ch1_t2"]},
+    {"test_set": "ch1_check1", "sequence_no": 9, "answer_key": "4", "topics": ["ch1_t1", "ch1_t2"]},
+    {"test_set": "ch1_check1", "sequence_no": 10, "answer_key": "1", "topics": ["ch1_t1", "ch1_t2"]},
+    {"test_set": "ch1_check1", "sequence_no": 11, "answer_key": "4", "topics": ["ch1_t1", "ch1_t2"]},
+    {"test_set": "ch1_check1", "sequence_no": 12, "answer_key": "4", "topics": ["ch1_t1", "ch1_t2"]},
+    {"test_set": "ch1_check2", "sequence_no": 1, "answer_key": "4", "topics": ["ch1_t3", "ch1_t4"]},
+    {"test_set": "ch1_check2", "sequence_no": 2, "answer_key": "2", "topics": ["ch1_t3", "ch1_t4"]},
+    {"test_set": "ch1_check2", "sequence_no": 3, "answer_key": "4", "topics": ["ch1_t3", "ch1_t4"]},
+    {"test_set": "ch1_check2", "sequence_no": 4, "answer_key": "2", "topics": ["ch1_t3", "ch1_t4"]},
+    {"test_set": "ch1_check2", "sequence_no": 5, "answer_key": "1", "topics": ["ch1_t3", "ch1_t4"]},
+    {"test_set": "ch1_check2", "sequence_no": 6, "answer_key": "1", "topics": ["ch1_t3", "ch1_t4"]},
+    {"test_set": "ch1_check2", "sequence_no": 7, "answer_key": "1", "topics": ["ch1_t3", "ch1_t4"]},
+    {"test_set": "ch1_check2", "sequence_no": 8, "answer_key": "3", "topics": ["ch1_t3", "ch1_t4"]},
+    {"test_set": "ch1_check2", "sequence_no": 9, "answer_key": "4", "topics": ["ch1_t3", "ch1_t4"]},
+    {"test_set": "ch1_check2", "sequence_no": 10, "answer_key": "4", "topics": ["ch1_t3", "ch1_t4"]},
+    {"test_set": "ch1_check2", "sequence_no": 11, "answer_key": "1", "topics": ["ch1_t3", "ch1_t4"]},
+    {"test_set": "ch1_check2", "sequence_no": 12, "answer_key": "2", "topics": ["ch1_t3", "ch1_t4"]},
+    {"test_set": "ch1_exam1", "sequence_no": 1, "answer_key": "4"},
+    {"test_set": "ch1_exam1", "sequence_no": 2, "answer_key": "3"},
+    {"test_set": "ch1_exam1", "sequence_no": 3, "answer_key": "4"},
+    {"test_set": "ch1_exam1", "sequence_no": 4, "answer_key": "2"},
+    {"test_set": "ch1_exam1", "sequence_no": 5, "answer_key": "4"},
+    {"test_set": "ch1_exam1", "sequence_no": 6, "answer_key": "2"},
+    {"test_set": "ch1_exam1", "sequence_no": 7, "answer_key": "4"},
+    {"test_set": "ch1_exam1", "sequence_no": 8, "answer_key": "3"},
+    {"test_set": "ch1_exam1", "sequence_no": 9, "answer_key": "1"},
+    {"test_set": "ch1_exam1", "sequence_no": 10, "answer_key": "1"},
+    {"test_set": "ch1_exam2", "sequence_no": 1, "answer_key": "1"},
+    {"test_set": "ch1_exam2", "sequence_no": 2, "answer_key": "3"},
+    {"test_set": "ch1_exam2", "sequence_no": 3, "answer_key": "3"},
+    {"test_set": "ch1_exam2", "sequence_no": 4, "answer_key": "2"},
+    {"test_set": "ch1_exam2", "sequence_no": 5, "answer_key": "3"},
+    {"test_set": "ch1_exam2", "sequence_no": 6, "answer_key": "3"},
+    {"test_set": "ch1_exam2", "sequence_no": 7, "answer_key": "1"},
+    {"test_set": "ch1_exam2", "sequence_no": 8, "answer_key": "4"},
+    {"test_set": "ch1_exam2", "sequence_no": 9, "answer_key": "3"},
+    {"test_set": "ch1_exam2", "sequence_no": 10, "answer_key": "3"},
+    {"test_set": "ch2_check1", "sequence_no": 1, "answer_key": "4", "topics": ["ch2_t1", "ch2_t2", "ch2_t3"]},
+    {"test_set": "ch2_check1", "sequence_no": 2, "answer_key": "4", "topics": ["ch2_t1", "ch2_t2", "ch2_t3"]},
+    {"test_set": "ch2_check1", "sequence_no": 3, "answer_key": "2", "topics": ["ch2_t1", "ch2_t2", "ch2_t3"]},
+    {"test_set": "ch2_check1", "sequence_no": 4, "answer_key": "2", "topics": ["ch2_t1", "ch2_t2", "ch2_t3"]},
+    {"test_set": "ch2_check1", "sequence_no": 5, "answer_key": "1", "topics": ["ch2_t1", "ch2_t2", "ch2_t3"]},
+    {"test_set": "ch2_check1", "sequence_no": 6, "answer_key": "1", "topics": ["ch2_t1", "ch2_t2", "ch2_t3"]},
+    {"test_set": "ch2_check1", "sequence_no": 7, "answer_key": "2", "topics": ["ch2_t1", "ch2_t2", "ch2_t3"]},
+    {"test_set": "ch2_check1", "sequence_no": 8, "answer_key": "2", "topics": ["ch2_t1", "ch2_t2", "ch2_t3"]},
+    {"test_set": "ch2_check1", "sequence_no": 9, "answer_key": "1", "topics": ["ch2_t1", "ch2_t2", "ch2_t3"]},
+    {"test_set": "ch2_check1", "sequence_no": 10, "answer_key": "2", "topics": ["ch2_t1", "ch2_t2", "ch2_t3"]},
+    {"test_set": "ch2_check1", "sequence_no": 11, "answer_key": "1", "topics": ["ch2_t1", "ch2_t2", "ch2_t3"]},
+    {"test_set": "ch2_check1", "sequence_no": 12, "answer_key": "2", "topics": ["ch2_t1", "ch2_t2", "ch2_t3"]},
+    {"test_set": "ch2_exam1", "sequence_no": 1, "answer_key": "1"},
+    {"test_set": "ch2_exam1", "sequence_no": 2, "answer_key": "3"},
+    {"test_set": "ch2_exam1", "sequence_no": 3, "answer_key": "2"},
+    {"test_set": "ch2_exam1", "sequence_no": 4, "answer_key": "2"},
+    {"test_set": "ch2_exam1", "sequence_no": 5, "answer_key": "3"},
+    {"test_set": "ch2_exam1", "sequence_no": 6, "answer_key": "4"},
+    {"test_set": "ch2_exam1", "sequence_no": 7, "answer_key": "3"},
+    {"test_set": "ch2_exam1", "sequence_no": 8, "answer_key": "4"},
+    {"test_set": "ch2_exam1", "sequence_no": 9, "answer_key": "2"},
+    {"test_set": "ch2_exam1", "sequence_no": 10, "answer_key": "2"},
+    {"test_set": "ch3_check1", "sequence_no": 1, "answer_key": "3", "topics": ["ch3_t1", "ch3_t2"]},
+    {"test_set": "ch3_check1", "sequence_no": 2, "answer_key": "1", "topics": ["ch3_t1", "ch3_t2"]},
+    {"test_set": "ch3_check1", "sequence_no": 3, "answer_key": "3", "topics": ["ch3_t1", "ch3_t2"]},
+    {"test_set": "ch3_check1", "sequence_no": 4, "answer_key": "4", "topics": ["ch3_t1", "ch3_t2"]},
+    {"test_set": "ch3_check1", "sequence_no": 5, "answer_key": "2", "topics": ["ch3_t1", "ch3_t2"]},
+    {"test_set": "ch3_check1", "sequence_no": 6, "answer_key": "3", "topics": ["ch3_t1", "ch3_t2"]},
+    {"test_set": "ch3_check1", "sequence_no": 7, "answer_key": "1", "topics": ["ch3_t1", "ch3_t2"]},
+    {"test_set": "ch3_check1", "sequence_no": 8, "answer_key": "4", "topics": ["ch3_t1", "ch3_t2"]},
+    {"test_set": "ch3_check1", "sequence_no": 9, "answer_key": "4", "topics": ["ch3_t1", "ch3_t2"]},
+    {"test_set": "ch3_check1", "sequence_no": 10, "answer_key": "1", "topics": ["ch3_t1", "ch3_t2"]},
+    {"test_set": "ch3_check1", "sequence_no": 11, "answer_key": "1", "topics": ["ch3_t1", "ch3_t2"]},
+    {"test_set": "ch3_check1", "sequence_no": 12, "answer_key": "2", "topics": ["ch3_t1", "ch3_t2"]},
+    {"test_set": "ch3_exam1", "sequence_no": 1, "answer_key": "4"},
+    {"test_set": "ch3_exam1", "sequence_no": 2, "answer_key": "4"},
+    {"test_set": "ch3_exam1", "sequence_no": 3, "answer_key": "1"},
+    {"test_set": "ch3_exam1", "sequence_no": 4, "answer_key": "3"},
+    {"test_set": "ch3_exam1", "sequence_no": 5, "answer_key": "4"},
+    {"test_set": "ch3_exam1", "sequence_no": 6, "answer_key": "4"},
+    {"test_set": "ch3_exam1", "sequence_no": 7, "answer_key": "4"},
+    {"test_set": "ch3_exam1", "sequence_no": 8, "answer_key": "1"},
+    {"test_set": "ch3_exam1", "sequence_no": 9, "answer_key": "1"},
+    {"test_set": "ch3_exam1", "sequence_no": 10, "answer_key": "4"},
+    {"test_set": "concours1404", "sequence_no": 1, "answer_key": "4", "topics": ["ch1"]},
+    {"test_set": "concours1404", "sequence_no": 2, "answer_key": "3", "topics": ["ch2"]},
+    {"test_set": "concours1404", "sequence_no": 3, "answer_key": "2", "topics": ["ch3"]},
+    {"test_set": "concours1404", "sequence_no": 4, "answer_key": "3", "topics": ["ch1"]},
+    {"test_set": "concours1404", "sequence_no": 5, "answer_key": "2", "topics": ["ch2"]},
+    {"test_set": "concours1404", "sequence_no": 6, "answer_key": "4", "topics": ["ch3"]},
+    {"test_set": "concours1404", "sequence_no": 7, "answer_key": "1", "topics": ["ch1"]},
+    {"test_set": "concours1404", "sequence_no": 8, "answer_key": "2", "topics": ["ch2"]},
+    {"test_set": "concours1404", "sequence_no": 9, "answer_key": "2", "topics": ["ch3"]},
+    {"test_set": "concours1404", "sequence_no": 10, "answer_key": "4", "topics": ["ch1"]},
+    {"test_set": "concours1404", "sequence_no": 11, "answer_key": "1", "topics": ["ch2"]},
+    {"test_set": "concours1404", "sequence_no": 12, "answer_key": "4", "topics": ["ch3"]},
+    {"test_set": "concours1404", "sequence_no": 13, "answer_key": "2", "topics": ["ch1"]},
+    {"test_set": "concours1404", "sequence_no": 14, "answer_key": "3", "topics": ["ch2"]},
+    {"test_set": "concours1404", "sequence_no": 15, "answer_key": "4", "topics": ["ch3"]}
+  ]
+}

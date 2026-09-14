@@ -1,0 +1,18 @@
+{
+  "config": "hesab1_olgoo.json",
+  "seed": 45902,
+  "specs": [
+    {"test_set": "ch1_les1_sec1_drill", "count": 10, "difficulty": "L1x4,L2x3,L3x3"},
+    {"test_set": "ch1_les1_sec2_drill", "count": 10, "difficulty": "L1x4,L2x3,L3x3"},
+    {"test_set": "ch1_les1_concours", "count": 6},
+    {"test_set": "ch1_les2_sec1_drill", "count": 10, "difficulty": "L1x4,L2x3,L3x3"},
+    {"test_set": "ch1_les2_sec2_drill", "count": 10, "difficulty": "L1x4,L2x3,L3x3"},
+    {"test_set": "ch1_les2_concours", "count": 6},
+    {"test_set": "ch2_les1_sec1_drill", "count": 10, "difficulty": "L1x4,L2x3,L3x3"},
+    {"test_set": "ch2_les1_sec2_drill", "count": 10, "difficulty": "L1x4,L2x3,L3x3"},
+    {"test_set": "ch2_les1_concours", "count": 6},
+    {"test_set": "ch2_les2_sec1_drill", "count": 10, "difficulty": "L1x4,L2x3,L3x3"},
+    {"test_set": "ch2_les2_sec2_drill", "count": 10, "difficulty": "L1x4,L2x3,L3x3"},
+    {"test_set": "ch2_les2_concours", "count": 6}
+  ]
+}

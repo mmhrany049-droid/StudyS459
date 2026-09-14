@@ -1,0 +1,15 @@
+{
+  "config": "chem2_mobtakeren.json",
+  "seed": 45901,
+  "specs": [
+    {"test_set": "ch1_check1", "count": 12, "topics": ["ch1_t1", "ch1_t2"]},
+    {"test_set": "ch1_check2", "count": 12, "topics": ["ch1_t3", "ch1_t4"]},
+    {"test_set": "ch1_exam1", "count": 10},
+    {"test_set": "ch1_exam2", "count": 10},
+    {"test_set": "ch2_check1", "count": 12, "topics": ["ch2_t1", "ch2_t2", "ch2_t3"]},
+    {"test_set": "ch2_exam1", "count": 10},
+    {"test_set": "ch3_check1", "count": 12, "topics": ["ch3_t1", "ch3_t2"]},
+    {"test_set": "ch3_exam1", "count": 10},
+    {"test_set": "concours1404", "count": 15, "topics_cycle": [["ch1"], ["ch2"], ["ch3"]]}
+  ]
+}
