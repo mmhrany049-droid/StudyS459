@@ -95,8 +95,10 @@ export default function TestSession() {
     if (!window.confirm("نشست به پایان برسد؟")) return;
     setFinishing(true);
     try {
-      await finishSession(session.id);
-      navigate(`/test/${session.id}/result`);
+      const finished = await finishSession(session.id);
+      navigate(`/test/${session.id}/result`, {
+        state: { pointsEarned: finished.result?.points_earned ?? null },
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "خطای نامشخص");
       setFinishing(false);

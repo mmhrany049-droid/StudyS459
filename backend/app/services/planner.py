@@ -86,7 +86,8 @@ def _placed_map(db: Session, tasks: list[Task]) -> dict[int, date]:
 
 
 def _task_out(
-    task: Task, *, today: date, tz: str, placed_on: date | None
+    task: Task, *, today: date, tz: str, placed_on: date | None,
+    points_earned: int | None = None,
 ) -> TaskOut:
     return TaskOut(
         id=task.id, task_type=task.task_type,  # type: ignore[arg-type]
@@ -99,7 +100,7 @@ def _task_out(
         is_overdue=_is_overdue(task, today, tz),
         recommendation_reason=task.recommendation_reason,
         created_at=task.created_at, completed_at=task.completed_at,
-        placed_on=placed_on,
+        placed_on=placed_on, points_earned=points_earned,
     )
 
 
@@ -172,6 +173,8 @@ def create_task(db: Session, *, user_id: int, payload: TaskCreate) -> TaskOut:
 
 
 def patch_task(db: Session, *, user_id: int, task_id: int, payload: TaskPatch) -> TaskOut:
+    from app.services import rewards as rewards_service
+
     user = get_or_create_single_user(db, user_id)
     task = repo.get_task(db, user.id, task_id)
     if task is None:
@@ -180,6 +183,7 @@ def patch_task(db: Session, *, user_id: int, task_id: int, payload: TaskPatch) -
         raise AppError("invalid_task", "اولویت باید بین ۰ تا ۱ باشد.", status_code=422)
     if payload.estimated_minutes is not None and payload.estimated_minutes < 0:
         raise AppError("invalid_task", "زمان تخمینی نمی‌تواند منفی باشد.", status_code=422)
+    points: int | None = None
     try:
         if payload.status is not None and payload.status != task.status:
             if payload.status not in TRANSITIONS[task.status]:
@@ -190,6 +194,10 @@ def patch_task(db: Session, *, user_id: int, task_id: int, payload: TaskPatch) -
                 )
             task.status = payload.status
             task.completed_at = utcnow().replace(tzinfo=None) if payload.status == "completed" else None
+            if payload.status == "completed":
+                db.flush()
+                points = rewards_service.on_task_completed(
+                    db, user.id, task, tz=user.timezone)
         if payload.title is not None:
             task.title = payload.title
         if payload.priority is not None:
@@ -209,28 +217,36 @@ def patch_task(db: Session, *, user_id: int, task_id: int, payload: TaskPatch) -
         raise
     today = _today(user.timezone)
     placed = _placed_map(db, [task]).get(task.id)
-    return _task_out(task, today=today, tz=user.timezone, placed_on=placed)
+    return _task_out(task, today=today, tz=user.timezone, placed_on=placed,
+                     points_earned=points)
 
 
 def complete_task(db: Session, *, user_id: int, task_id: int) -> TaskOut:
     """Manual completion; already-completed is an idempotent success."""
+    from app.services import rewards as rewards_service
+
     user = get_or_create_single_user(db, user_id)
     task = repo.get_task(db, user.id, task_id)
     if task is None:
         raise AppError("task_not_found", "تسک یافت نشد.", status_code=404)
     if task.status == "cancelled":
         raise AppError("invalid_transition", "تسک لغوشده را نمی‌توان کامل کرد.", status_code=422)
+    points: int | None = None
     try:
         if task.status != "completed":
             task.status = "completed"
             task.completed_at = utcnow().replace(tzinfo=None)
+            db.flush()
+            points = rewards_service.on_task_completed(
+                db, user.id, task, tz=user.timezone)
         db.commit()
     except Exception:
         db.rollback()
         raise
     today = _today(user.timezone)
     placed = _placed_map(db, [task]).get(task.id)
-    return _task_out(task, today=today, tz=user.timezone, placed_on=placed)
+    return _task_out(task, today=today, tz=user.timezone, placed_on=placed,
+                     points_earned=points)
 
 
 def put_placements(

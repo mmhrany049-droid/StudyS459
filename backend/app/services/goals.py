@@ -28,7 +28,6 @@ from app.models import WeeklyGoal
 from app.repositories import analytics as analytics_repo
 from app.repositories import books as book_repo
 from app.repositories import goals as repo
-from app.repositories import tests as test_repo
 from app.schemas.goals import (
     CandidateTaskOut,
     CandidateTasksOut,
@@ -39,7 +38,6 @@ from app.schemas.goals import (
     WeekGoalOut,
     WeekGoalPatch,
 )
-from app.services import analytics as analytics_service
 from app.services.users import get_or_create_single_user
 
 SOURCE_BASE_SCORE = {
@@ -272,11 +270,12 @@ def candidate_tasks(
     goal = repo.get_goal(db, user.id, goal_id)
     if goal is None:
         raise AppError("goal_not_found", "هدف یافت نشد.", status_code=404)
+    from app.services import student_state
+
     data = _WeekData(db, user.id, goal.week_start, user.timezone)
-    weak_ranked = analytics_service.weaknesses(
-        db, user_id=user.id, limit=100, min_volume=1).items
-    weak = {w.node_id: w.score for w in weak_ranked}
-    ranked_weak_nodes = [w.node_id for w in weak_ranked]
+    signals = student_state.get_signals(db, user_id=user.id)
+    weak = signals.weak_scores
+    ranked_weak_nodes = signals.ranked_weak_nodes
 
     acc: dict[int, dict] = defaultdict(lambda: {
         "sources": set(), "item_ids": set(), "test": False, "review": False,
@@ -345,7 +344,7 @@ def candidate_tasks(
         entry["suggested"] = remaining_ever
 
     # Review candidates: pending questions grouped by node, in goal scope.
-    review_groups = _review_groups_by_node(db, user_id=user.id)
+    review_groups = signals.review_by_node
     scoped = {nid: g for nid, g in review_groups.items() if nid in in_scope} or review_groups
     top_review = sorted(scoped.items(), key=lambda kv: (-kv[1]["high"], -kv[1]["total"]))[:3]
     for nid, g in top_review:
@@ -459,15 +458,4 @@ def _pick_count_nodes(
     return [nid for _, _, _, nid in scored[:k]]
 
 
-def _review_groups_by_node(db: Session, *, user_id: int) -> dict[int, dict[str, int]]:
-    groups: dict[int, dict[str, int]] = defaultdict(lambda: {"total": 0, "high": 0})
-    pending = analytics_repo.pending_reviews(db, user_id)
-    qids = [r.entity_id for r in pending if r.entity_type == "question"]
-    topics = test_repo.topics_for_questions(db, qids)
-    prio = {r.entity_id: r.priority for r in pending if r.entity_type == "question"}
-    for qid in qids:
-        for nid, _title in topics.get(qid, []):
-            groups[nid]["total"] += 1
-            if prio.get(qid) == "high":
-                groups[nid]["high"] += 1
-    return groups
+

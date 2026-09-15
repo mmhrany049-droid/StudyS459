@@ -53,6 +53,16 @@ def progress_question(
     return service.question_history(db, user_id=user_id, question_id=question_id)
 
 
+@router.get("/questions/{question_id}/history", response_model=QuestionHistoryOut)
+def question_history_alias(
+    question_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+) -> QuestionHistoryOut:
+    """Contract URL (spec 14); same resource as /progress/questions/{id}."""
+    return service.question_history(db, user_id=user_id, question_id=question_id)
+
+
 @router.get("/analytics/trends", response_model=TrendsOut)
 def analytics_trends(
     days: int = Query(default=30),

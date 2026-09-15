@@ -57,6 +57,7 @@ class TaskOut(BaseModel):
     created_at: datetime
     completed_at: datetime | None
     placed_on: date | None
+    points_earned: int | None = None  # set only by the call that completes it
 
 
 class PlacedTaskOut(BaseModel):

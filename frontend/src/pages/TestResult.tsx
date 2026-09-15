@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { getSession, submitCorrections } from "@/api/tests";
 import type { SessionView } from "@/types/test";
 import { parityLabel } from "@/features/tests";
@@ -8,7 +8,10 @@ import { formatMMSS, formatPercent } from "@/utils/format";
 
 export default function TestResult() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const sessionId = Number(id);
+  // Points arrive via navigation state from the finish call (GET never has them).
+  const navPoints = (location.state as { pointsEarned?: number | null } | null)?.pointsEarned ?? null;
   const [view, setView] = useState<SessionView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [correcting, setCorrecting] = useState<number | null>(null);
@@ -78,6 +81,12 @@ export default function TestResult() {
           تست جدید
         </Link>
       </div>
+
+      {navPoints !== null && navPoints > 0 && (
+        <div className="rounded bg-amber-100 p-3 text-center font-bold text-amber-900">
+          🎉 +{navPoints} امتیاز کسب کردی!
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2 text-sm">
         <span className="rounded bg-slate-200 px-2 py-1">

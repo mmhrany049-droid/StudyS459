@@ -45,15 +45,15 @@ def latest_task_by_source(db: Session, source_type: str, source_id: int) -> Task
 
 def complete_tasks_by_source(
     db: Session, source_type: str, source_id: int, *, completed_at: datetime
-) -> int:
-    n = 0
+) -> list[Task]:
+    flipped: list[Task] = []
     for task in tasks_by_source(db, source_type, source_id):
         if task.status in ("planned", "in_progress"):
             task.status = "completed"
             task.completed_at = completed_at
-            n += 1
+            flipped.append(task)
     db.flush()
-    return n
+    return flipped
 
 
 def complete_task_if_open(db: Session, task_id: int, *, completed_at: datetime) -> bool:

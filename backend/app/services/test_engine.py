@@ -73,7 +73,13 @@ def _is_session_expired(session: TestSession, now: datetime) -> bool:
 
 
 def _complete_session(db: Session, session: TestSession, *, ended_at: datetime):
-    """Score latest attempts, fill verdicts, flip status. Returns the score."""
+    """Score, verdicts, status flip, task link, rewards.
+
+    Returns (score, session_points, task_points). Runs once per session.
+    """
+    from app.models import User
+    from app.services import rewards as rewards_service
+
     question_ids = repo.get_session_question_ids(db, session.id)
     detail = repo.get_session_questions_detail(db, session.id)
     keys = {q.id: q.answer_key for _, q, _ in detail}
@@ -86,13 +92,25 @@ def _complete_session(db: Session, session: TestSession, *, ended_at: datetime):
             latest[qid].result = verdict  # fill blank (NULL -> value); evidence untouched
     session.ended_at = ended_at
     session.status = "pending_correction" if score.totals.pending else "completed"
+    db.flush()
+    user = db.get(User, session.user_id)
+    tz = user.timezone if user else "Asia/Tehran"
+    session_points = rewards_service.on_session_finished(
+        db, session.user_id, session, score.buckets, tz=tz)
+    task_points = 0
     if session.task_id is not None:
         # Phase 5: finishing the linked session completes its test task.
         from app.repositories import planner as planner_repo
 
-        planner_repo.complete_task_if_open(db, session.task_id, completed_at=ended_at)
+        if planner_repo.complete_task_if_open(db, session.task_id, completed_at=ended_at):
+            from app.models import Task
+
+            task = db.get(Task, session.task_id)
+            if task is not None:
+                task_points = rewards_service.on_task_completed(
+                    db, session.user_id, task, tz=tz)
     db.flush()
-    return score
+    return score, session_points, task_points
 
 
 def _build_view(db: Session, session: TestSession, *, now: datetime) -> SessionView:
@@ -327,7 +345,7 @@ def submit_answers(
     if _is_session_expired(session, now):
         assert session.time_limit_seconds is not None
         try:
-            score = _complete_session(db, session, ended_at=deadline(session.started_at, session.time_limit_seconds))
+            score, _sp, _tp = _complete_session(db, session, ended_at=deadline(session.started_at, session.time_limit_seconds))
             populate_for_session(db, user_id=user_id, buckets=score.buckets)
             db.commit()
         except Exception:
@@ -388,14 +406,17 @@ def finish_session(db: Session, *, user_id: int, session_id: int) -> SessionView
     else:
         ended = now
     try:
-        score = _complete_session(db, session, ended_at=ended)
+        score, session_points, task_points = _complete_session(db, session, ended_at=ended)
         populate_for_session(db, user_id=user_id, buckets=score.buckets)
         db.commit()
     except Exception:
         db.rollback()
         raise
     logger.info("session finished: id=%s status=%s", session.id, session.status)
-    return _build_view(db, session, now=utcnow())
+    view = _build_view(db, session, now=utcnow())
+    if view.result is not None:
+        view.result.points_earned = session_points + task_points
+    return view
 
 
 # -- corrections (pending only) ----------------------------------------

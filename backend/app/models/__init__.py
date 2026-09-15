@@ -19,6 +19,7 @@ from app.models.node_parity_state import NodeParityState
 from app.models.question import Question
 from app.models.question_attempt import QuestionAttempt
 from app.models.question_topic_map import QuestionTopicMap
+from app.models.reward import Badge, RewardEvent, UserBadge
 from app.models.review_queue import ReviewQueue
 from app.models.subject import Subject
 from app.models.task import TASK_SOURCES, TASK_STATUSES, TASK_TYPES, DailyTaskPlacement, SchoolDayOverride, Task
@@ -32,6 +33,7 @@ __all__ = [
     "ALLOWED_TEST_TYPES",
     "SESSION_PARITIES",
     "SESSION_STATUSES",
+    "Badge",
     "Book",
     "BookImport",
     "BookNode",
@@ -50,6 +52,7 @@ __all__ = [
     "QuestionAttempt",
     "QuestionTopicMap",
     "ReviewQueue",
+    "RewardEvent",
     "Subject",
     "TASK_SOURCES",
     "TASK_STATUSES",
@@ -61,6 +64,7 @@ __all__ = [
     "TestSessionQuestion",
     "TestSet",
     "User",
+    "UserBadge",
     "UserBookActivation",
     "WeeklyGoal",
     "WeeklyGoalItem",

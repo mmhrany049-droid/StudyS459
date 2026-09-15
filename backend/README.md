@@ -164,6 +164,27 @@ school days; external always; floor 0); exam analytics never compute
 percentages or scores (open decisions #1/#6), so `exam_subject_results`
 is deliberately not built; capacity has no summer exception (rule 7).
 
+## Rewards (Phase 7)
+
+Points + streak + badges (spec 10). Motivational only — never feeds
+planning or selection.
+
+```bash
+curl -s localhost:8000/rewards/summary | head -c 300; echo
+```
+
+Key endpoints: `GET /rewards/summary` (total + streaks + badges +
+recent events), `GET /rewards/events`, `GET /rewards/badges`.
+Also added: contract alias `GET /questions/{id}/history`.
+
+Rules: correct +2, recovered wrong/unanswered +1, study task +5,
+streak day +5, daily plan +15, weekly goal +50; streak = consecutive
+days with a completed STUDY task (live-derived, longest kept as max
+run); 6 v1 badges granted once as zero-point events; finish/complete
+responses carry `points_earned` (null on plain reads). State signals
+(review/weakness/workload) aggregate in `services/student_state.py` and
+feed candidate generation.
+
 ## Structure (spec 12)
 
 ```

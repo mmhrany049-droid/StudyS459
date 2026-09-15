@@ -99,6 +99,7 @@ class ResultOut(BaseModel):
     wrong: int
     unanswered: int
     pending: int
+    points_earned: int | None = None  # set only by the finish call itself
     accuracy: float | None
     duration_seconds: int | None
     average_response_time_seconds: float | None

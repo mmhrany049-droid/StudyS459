@@ -71,6 +71,7 @@ export interface SessionResult {
   time_limit_seconds: number | null;
   started_at: string;
   ended_at: string | null;
+  points_earned?: number | null;
 }
 
 export interface TestSession {

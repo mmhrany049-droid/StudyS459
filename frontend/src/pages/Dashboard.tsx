@@ -1,12 +1,34 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { fetchRewardsSummary } from "@/api/rewards";
 import { useHealth } from "@/hooks/useHealth";
+import type { RewardsSummary } from "@/types/rewards";
 
-/** Phase-0 dashboard: proves frontend <-> backend wiring via /health. */
+/** Dashboard: server health + rewards strip (full widgets land in Phase 8). */
 export default function Dashboard() {
   const health = useHealth();
+  const [rewards, setRewards] = useState<RewardsSummary | null>(null);
+
+  useEffect(() => {
+    fetchRewardsSummary().then(setRewards).catch(() => undefined);
+  }, []);
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">داشبورد</h1>
+      {rewards && (
+        <Link
+          to="/rewards"
+          className="flex items-center justify-between rounded bg-white p-4 shadow hover:bg-slate-50"
+        >
+          <span className="text-lg font-bold tabular-nums">⭐ {rewards.total_points}</span>
+          <span className="text-sm tabular-nums">🔥 {rewards.current_streak} روز</span>
+          <span className="text-sm text-slate-600">
+            🏅 {rewards.badges.slice(0, 2).map((b) => b.title).join("، ") || "بدون نشان"}
+            {rewards.badge_count > 2 ? ` (+${rewards.badge_count - 2})` : ""}
+          </span>
+        </Link>
+      )}
       <div className="rounded bg-white p-4 shadow">
         <h2 className="mb-2 font-semibold">وضعیت اتصال به سرور</h2>
         {health.status === "loading" && <p>در حال بررسی…</p>}

@@ -73,9 +73,12 @@ def test_full_flow_over_http(client: TestClient) -> None:
     assert len(result["topic_breakdown"]) >= 1
     _assert_no_key(r.json(), "answer_key")
 
-    # Idempotent finish.
+    # Idempotent finish (points accrue only on the completing call).
+    assert result["points_earned"] is not None
     again = client.post(f"/test-sessions/{session_id}/finish").json()
-    assert again["result"] == result
+    assert again["result"]["points_earned"] is None
+    assert {k: v for k, v in again["result"].items() if k != "points_earned"} == {
+        k: v for k, v in result.items() if k != "points_earned"}
 
     # Parity state untouched by "any".
     ps = client.get(f"/nodes/{node_id}/parity-state").json()

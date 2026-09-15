@@ -247,7 +247,9 @@ def test_finish_idempotent(db_session: Session) -> None:
     done = _finish_111(db_session)
     before = repo.count_attempts(db_session, done.session.id)
     again = engine.finish_session(db_session, user_id=1, session_id=done.session.id)
-    assert again.result == done.result
+    assert done.result is not None and again.result is not None
+    assert again.result.model_copy(update={"points_earned": done.result.points_earned}) == done.result
+    assert again.result.points_earned is None  # points accrue once
     assert again.session.ended_at == done.session.ended_at
     assert repo.count_attempts(db_session, done.session.id) == before
 

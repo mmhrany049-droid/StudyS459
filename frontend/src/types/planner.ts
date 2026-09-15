@@ -23,6 +23,7 @@ export interface Task {
   created_at: string;
   completed_at: string | null;
   placed_on: string | null;
+  points_earned?: number | null;
 }
 
 export interface PlacedTask {

@@ -14,6 +14,7 @@ export default function Today() {
   const [day, setDay] = useState(todayISO());
   const [plan, setPlan] = useState<DayPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [earned, setEarned] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const load = useCallback(async (d: string) => {
@@ -76,8 +77,18 @@ export default function Today() {
         await startTest(task);
         return;
       }
-      if (action === "progress") await patchTask(task.id, { status: "in_progress" });
-      else await completeTask(task.id);
+      if (action === "progress") {
+        await patchTask(task.id, { status: "in_progress" });
+      } else {
+        const done = await completeTask(task.id);
+        if (done.points_earned !== null && done.points_earned !== undefined) {
+          setEarned(
+            done.points_earned > 0
+              ? `🎉 «${task.title}» تمام شد — +${done.points_earned} امتیاز!`
+              : `✅ «${task.title}» تمام شد.`,
+          );
+        }
+      }
       await load(day);
     } catch (err) {
       setError(err instanceof Error ? err.message : "خطای نامشخص");
@@ -98,6 +109,12 @@ export default function Today() {
         </h1>
         <button type="button" onClick={() => shift(1)} className="rounded bg-slate-200 px-2 py-1">←</button>
       </div>
+
+      {earned && (
+        <div className="rounded bg-amber-100 p-3 text-center font-bold text-amber-900">
+          {earned}
+        </div>
+      )}
 
       <div className="rounded-lg bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between text-sm">

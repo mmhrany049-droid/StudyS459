@@ -301,9 +301,14 @@ def patch_homework(db: Session, *, user_id: int, homework_id: int, payload: Home
         if payload.status is not None:
             row.status = payload.status
             if payload.status == "done":
-                planner_repo.complete_tasks_by_source(
+                from app.services import rewards as rewards_service
+
+                flipped = planner_repo.complete_tasks_by_source(
                     db, "homework", row.id,
                     completed_at=utcnow().replace(tzinfo=None))
+                for task in flipped:
+                    rewards_service.on_task_completed(
+                        db, user.id, task, tz=user.timezone)
         db.commit()
     except Exception:
         db.rollback()
