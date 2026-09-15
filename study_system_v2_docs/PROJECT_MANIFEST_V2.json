@@ -1,0 +1,19 @@
+{
+  "version": "2.0",
+  "based_on": "1.0",
+  "language": "fa-IR",
+  "calendar": "jalali",
+  "week_start": "saturday",
+  "timezone": "Asia/Tehran",
+  "default_classes": ["حسابان", "شیمی", "فیزیک"],
+  "critical_features": [
+    "past_test_import",
+    "actual_duration_untimed",
+    "cluster_random_review",
+    "coins_and_wake_up",
+    "habit_advice_after_30_days",
+    "class_day_subject_priority",
+    "jalali_ui",
+    "session_block_60_to_120_minutes"
+  ]
+}
