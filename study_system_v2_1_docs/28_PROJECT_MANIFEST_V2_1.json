@@ -1,0 +1,27 @@
+{
+  "version": "2.1",
+  "based_on": "2.0",
+  "language": "fa-IR",
+  "calendar": "jalali",
+  "week_start": "saturday",
+  "timezone": "Asia/Tehran",
+  "default_classes": [
+    "حسابان",
+    "شیمی",
+    "فیزیک"
+  ],
+  "behavioral_intelligence": true,
+  "critical_features": [
+    "all_v2_features",
+    "user_profile",
+    "adaptive_questionnaire",
+    "weekly_planning_interview",
+    "behavior_engine",
+    "state_engine",
+    "capacity_estimator",
+    "procrastination_detection",
+    "manual_plan_override",
+    "plan_adaptation_loop",
+    "confidence_and_evidence"
+  ]
+}
