@@ -7,6 +7,7 @@ Data flow per finish: latest attempts -> score -> fill verdicts -> result.
 import random
 from datetime import datetime
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.analytics.review_queue import populate_for_correction, populate_for_session
@@ -375,15 +376,26 @@ def submit_answers(
                     RecordedAttempt(question_id=existing.question_id, attempt_id=existing.id, duplicate=True)
                 )
                 continue
-            attempt = repo.create_attempt(
-                db,
-                session_id=session.id,
-                question_id=item.question_id,
-                user_id=user_id,
-                answer=item.answer,  # None = retract to unanswered (append-only)
-                response_time_seconds=item.response_time_seconds,
-                client_attempt_id=str(item.client_attempt_id),
-            )
+            try:
+                with db.begin_nested():  # savepoint: a lost race rolls back one row
+                    attempt = repo.create_attempt(
+                        db,
+                        session_id=session.id,
+                        question_id=item.question_id,
+                        user_id=user_id,
+                        answer=item.answer,  # None = retract to unanswered (append-only)
+                        response_time_seconds=item.response_time_seconds,
+                        client_attempt_id=str(item.client_attempt_id),
+                    )
+            except IntegrityError:
+                # Concurrent double-submit: the other request won. Re-read it.
+                winner = repo.get_attempt_by_client_id(db, str(item.client_attempt_id))
+                if winner is None:
+                    raise
+                recorded.append(
+                    RecordedAttempt(question_id=winner.question_id, attempt_id=winner.id, duplicate=True)
+                )
+                continue
             recorded.append(
                 RecordedAttempt(question_id=item.question_id, attempt_id=attempt.id, duplicate=False)
             )

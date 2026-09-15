@@ -185,6 +185,24 @@ responses carry `points_earned` (null on plain reads). State signals
 (review/weakness/workload) aggregate in `services/student_state.py` and
 feed candidate generation.
 
+## Settings + Hardening (Phase 8)
+
+```bash
+curl -s localhost:8000/users/me; echo
+curl -s -X PATCH localhost:8000/users/me \
+  -H 'Content-Type: application/json' \
+  -d '{"timezone":"UTC"}'; echo
+```
+
+Key endpoints: `GET /users/me`, `PATCH /users/me`
+(display_name + ZoneInfo-validated timezone only; auth stays a
+single-user stub, open decision #9).
+
+Hardening: `submit_answers` wraps each insert in a savepoint so a lost
+`client_attempt_id` race returns `duplicate=true` instead of 500;
+`tests/test_contract.py` pins all 50 spec-14 URLs (minus auth/telegram)
+with no `/api` prefix.
+
 ## Structure (spec 12)
 
 ```

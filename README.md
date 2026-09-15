@@ -83,6 +83,6 @@ StudyS459/
 - [x] **Phase 5** — Planner (قانون جمعه + School Override)
 - [x] **Phase 6** — Academic (مدرسه/کلاس/تکلیف/امتحان)
 - [x] **Phase 7** — Student State + Reward (امتیاز/streak/نشان)
-- [ ] **Phase 8** — UI کامل + Hardening
+- [x] **Phase 8** — UI کامل + Hardening (تنظیمات، داشبورد کامل، گارد race، تست انطباق قرارداد)
 
 گزارش هر Phase در PR/کامیت همان Phase ثبت می‌شود.

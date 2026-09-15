@@ -11,6 +11,7 @@ from app.api.v1.nodes import router as nodes_router
 from app.api.v1.planner import router as planner_router
 from app.api.v1.rewards import router as rewards_router
 from app.api.v1.test_sessions import router as tests_router
+from app.api.v1.users import router as users_router
 
 v1_router = APIRouter()
 v1_router.include_router(health_router)
@@ -23,5 +24,6 @@ v1_router.include_router(planner_router)
 v1_router.include_router(rewards_router)
 v1_router.include_router(tests_router)
 v1_router.include_router(analytics_router)
+v1_router.include_router(users_router)
 
 __all__ = ["v1_router"]

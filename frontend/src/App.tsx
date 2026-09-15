@@ -10,6 +10,7 @@ import Homework from "@/pages/Homework";
 import Placeholder from "@/pages/Placeholder";
 import Rewards from "@/pages/Rewards";
 import Schedule from "@/pages/Schedule";
+import Settings from "@/pages/Settings";
 import Progress from "@/pages/Progress";
 import QuestionHistory from "@/pages/QuestionHistory";
 import TestResult from "@/pages/TestResult";
@@ -38,10 +39,7 @@ export default function App() {
         <Route path="exams" element={<Exams />} />
         <Route path="exams/:id" element={<ExamDetail />} />
         <Route path="rewards" element={<Rewards />} />
-        <Route
-          path="settings"
-          element={<Placeholder title="تنظیمات" phase="Phase 8" />}
-        />
+        <Route path="settings" element={<Settings />} />
         <Route
           path="*"
           element={<Placeholder title="یافت نشد" phase="—" />}
