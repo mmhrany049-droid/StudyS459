@@ -24,7 +24,7 @@ from ..schemas import (
     TaughtTopicIn,
     WakeUpIn,
 )
-from ..services import planner, readiness, rewards, taught, test_engine
+from ..services import planner, questionnaire, readiness, rewards, taught, test_engine
 from ..services.common import current_user, log_behavior, node_full_title
 from ..utils import jalali
 
@@ -568,10 +568,15 @@ def save_interview(body: InterviewAnswers, db: Session = Depends(get_db)):
 @router.post("/onboarding/answers")
 def onboarding_answer(body: OnboardingAnswerIn, db: Session = Depends(get_db)):
     user = current_user(db)
-    db.add(m.OnboardingAnswer(user_id=user.id, question_code=body.question_code,
-                              answer_value=body.answer_value))
+    try:
+        res = questionnaire.save_answer(db, user.id, body.question_code,
+                                        body.answer_value)
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(400, str(e))
+    log_behavior(db, user.id, "onboarding_answer", {"code": body.question_code})
     db.commit()
-    return {"saved": True}
+    return res
 
 
 @router.get("/onboarding/summary")
@@ -581,6 +586,46 @@ def onboarding_summary(db: Session = Depends(get_db)):
         m.OnboardingAnswer.user_id == user.id)).all()
     return {"answered": len(rows),
             "answers": {r.question_code: r.answer_value for r in rows}}
+
+
+# ------------------------------------------- پرسش‌نامه تطبیقی (سند ۱۵ و ۱۴)
+@router.get("/questionnaire/next")
+def questionnaire_next(db: Session = Depends(get_db)):
+    """سوال بعدی بر اساس بیشترین عدم‌قطعیت؛ null یعنی پرسش‌نامه تمام شده."""
+    user = current_user(db)
+    return {"question": questionnaire.next_question(db, user.id)}
+
+
+@router.get("/questionnaire/profile")
+def questionnaire_profile(db: Session = Depends(get_db)):
+    """مدل شخصیت: هر بُعد با value/confidence/evidence_count + توصیه‌ها."""
+    user = current_user(db)
+    p = questionnaire.profile(db, user.id)
+    p["hints"] = questionnaire.planning_hints(db, user.id)
+    return p
+
+
+@router.get("/questionnaire/questions")
+def questionnaire_all(db: Session = Depends(get_db)):
+    """همه سوال‌ها همراه پاسخ فعلی (برای مرور و تغییر پاسخ)."""
+    user = current_user(db)
+    given = {r.question_code: r.answer_value for r in db.scalars(
+        select(m.OnboardingAnswer).where(
+            m.OnboardingAnswer.user_id == user.id)).all()}
+    return {"questions": [{
+        "code": q["code"], "group": q["group"], "kind": q["kind"],
+        "text": q["text"],
+        "options": [{"key": o["key"], "label": o["label"]} for o in q["options"]],
+        "answer": given.get(q["code"]),
+    } for q in questionnaire.QUESTIONS]}
+
+
+@router.delete("/questionnaire")
+def questionnaire_reset(db: Session = Depends(get_db)):
+    user = current_user(db)
+    res = questionnaire.reset(db, user.id)
+    db.commit()
+    return res
 
 
 # ------------------------------------------------------------------ drafts (S2)

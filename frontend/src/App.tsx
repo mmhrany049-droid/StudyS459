@@ -12,6 +12,7 @@ import Readiness from "./pages/Readiness";
 import TestRunner from "./pages/TestRunner";
 import Progress from "./pages/Progress";
 import Schedule from "./pages/Schedule";
+import ProfilePage from "./pages/Profile";
 
 const NAV = [
   { to: "/", label: "داشبورد", icon: "🏠", end: true },
@@ -23,6 +24,7 @@ const NAV = [
   { to: "/readiness", label: "آمادگی امتحان", icon: "🎯" },
   { to: "/progress", label: "پیشرفت", icon: "📊" },
   { to: "/schedule", label: "کلاس‌ها", icon: "🗓️" },
+  { to: "/profile", label: "پروفایل و پرسش‌نامه", icon: "🧭" },
 ];
 
 export default function App() {
@@ -99,6 +101,7 @@ export default function App() {
               <Route path="/test/:sessionId" element={<TestRunner />} />
               <Route path="/progress" element={<Progress />} />
               <Route path="/schedule" element={<Schedule />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Routes>
           </main>
         </div>
