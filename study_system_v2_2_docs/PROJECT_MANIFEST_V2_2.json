@@ -1,0 +1,27 @@
+{
+  "version": "2.2",
+  "based_on": "2.1",
+  "do_not_modify": "2.1 core behavior except additive hooks",
+  "features": [
+    "in_app_question_bank_per_topic",
+    "four_choice_answer_key_list",
+    "past_attempts_by_book_with_unanswered_option",
+    "taught_topics_and_untested_suggestions",
+    "exam_pdf_image_storage",
+    "exam_multi_attempt_with_duration",
+    "mock_exam_multi_subject_topic_map",
+    "exam_readiness_topic_based_suggestions",
+    "keyboard_fast_answer_entry",
+    "compact_answer_key_paste",
+    "taught_without_bank_warning",
+    "coverage_vs_session_unanswered_labels",
+    "post_teach_48h_small_task",
+    "exam_attempt_labels",
+    "mock_time_per_subject_optional",
+    "readiness_wrong_only_filter",
+    "soft_delete_questions_with_history",
+    "export_bank_and_attempts",
+    "v22_badges",
+    "weekly_exam_coverage_card"
+  ]
+}
