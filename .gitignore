@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+backend/data/
+backend/tests/_tmp/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS / editor
+.DS_Store
+*.log

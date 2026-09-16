@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: "Vazirmatn", Tahoma, sans-serif;
+  }
+  body {
+    @apply bg-surface-alt text-ink antialiased;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-slate-300;
+  }
+  input,
+  select,
+  textarea,
+  button {
+    font-family: inherit;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-400 ring-offset-1;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-surface-line bg-white p-5 shadow-card;
+  }
+  .card-tight {
+    @apply rounded-xl border border-surface-line bg-white p-3.5;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium
+           transition-all duration-150 active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-700 shadow-sm;
+  }
+  .btn-ghost {
+    @apply btn border border-surface-line bg-white text-ink-soft hover:bg-surface-alt hover:text-ink;
+  }
+  .btn-soft {
+    @apply btn bg-brand-50 text-brand-700 hover:bg-brand-100;
+  }
+  .btn-danger {
+    @apply btn bg-rose-50 text-rose-700 hover:bg-rose-100;
+  }
+  .btn-xs {
+    @apply rounded-lg px-2.5 py-1 text-xs;
+  }
+  .input {
+    @apply w-full rounded-xl border border-surface-line bg-white px-3.5 py-2 text-sm
+           placeholder:text-ink-mute focus:border-brand-400;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-medium text-ink-soft;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
+  }
+  .section-title {
+    @apply text-lg font-bold text-ink;
+  }
+  .muted {
+    @apply text-sm text-ink-soft;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.choice-btn {
+  @apply flex h-9 w-9 items-center justify-center rounded-lg border border-surface-line
+         bg-white text-sm font-semibold text-ink-soft transition-all duration-100
+         hover:border-brand-400 hover:bg-brand-50 active:scale-90;
+}
+.choice-btn[data-active="true"] {
+  @apply border-brand-600 bg-brand-600 text-white shadow-sm;
+}
+.choice-btn[data-skip="true"][data-active="true"] {
+  @apply border-slate-500 bg-slate-500 text-white;
+}
+.row-focus {
+  @apply bg-brand-50/70 ring-2 ring-brand-200;
+}
