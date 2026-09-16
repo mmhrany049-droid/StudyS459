@@ -1,0 +1,21 @@
+{
+  "version": "2.2",
+  "based_on": "2.1",
+  "inherit_all_previous_features": true,
+  "breaking_ui_rule": "jalali_only_no_gregorian_display",
+  "features": [
+    "preserve_v1_v2_v21",
+    "per_book_topic_question_bank_section",
+    "four_choice_answer_key_list_detailed",
+    "past_import_by_book_with_explicit_unanswered",
+    "taught_checkbox_cascade_chapter_to_descendants",
+    "multi_facet_personality_questions",
+    "daily_start_end_questions",
+    "weekly_end_and_planning_questions",
+    "jalali_only",
+    "telegram_optional_addon",
+    "exams_pdf_image_multi_attempt_duration",
+    "mock_multi_subject_topics",
+    "exam_readiness_suggestions"
+  ]
+}
