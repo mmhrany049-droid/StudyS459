@@ -455,11 +455,11 @@ def update_class(
 
 @router.post("/planning/sessions")
 def create_planning_session(
-    payload: PlanningSessionPayload,
+    payload: PlanningSessionPayload | None = None,
     user: models.User = Depends(current_user),
     db: Session = Depends(get_db),
 ) -> dict:
-    session = planner.create_session(db, user, payload.model_dump())
+    session = planner.create_session(db, user, (payload or PlanningSessionPayload()).model_dump())
     db.commit()
     return planner.session_payload(db, user, session)
 

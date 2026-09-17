@@ -48,7 +48,11 @@ def dashboard(db: Session, user: models.User) -> dict:
             "is_school_day": day_payload["capacity"]["is_school_day"],
         },
         "what_matters_now": {
-            "priorities": priority.compute_priorities(db, user, horizon="week", day=today, limit=5),
+            # every priority on the home screen carries its own "why" (the 4 questions)
+            "priorities": [
+                {**item, "why": priority.explain_priority(item)}
+                for item in priority.compute_priorities(db, user, horizon="week", day=today, limit=5)
+            ],
             "review": review.queue_stats(db, user),
         },
         "what_next": {

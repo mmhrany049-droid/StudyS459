@@ -472,7 +472,21 @@ def finish_session(
         )
     )
     if session.status == SessionStatus.COMPLETED.value and already:
-        return session_result(db, session_id, idempotent=True)
+        # A retry must get the same shape back, without re-awarding anything.
+        from . import rewards as rewards_service
+
+        payload = session_result(db, session_id, idempotent=True)
+        missing = sum(
+            1
+            for row in already
+            if row.result == AttemptResultValue.NOT_EVALUABLE.value
+            and row.state != AnswerState.NOT_ENTERED.value
+        )
+        payload["rewards"] = rewards_service.session_summary(db, user, session)
+        payload["pending_correction"] = missing > 0
+        payload["missing_answer_keys"] = missing
+        payload["auto_finish"] = auto_finish
+        return payload
 
     sheet = db.scalars(select(models.ResponseSheet).where(models.ResponseSheet.session_id == session_id)).first()
     if sheet is None:
@@ -511,6 +525,7 @@ def finish_session(
             selected = entry.selected_choice
         result = _persist_attempt(db, user, session, question, entry, state, selected)
         if result.result == AttemptResultValue.NOT_EVALUABLE.value:
+            # only a genuinely absent answer key counts; NOT_ENTERED has its own value
             missing_keys += 1
         evaluated.append(result)
 
@@ -532,7 +547,9 @@ def finish_session(
     learning.refresh_topics(db, user, affected_topics)
     review.sync_from_session(db, user, session)
     learning.refresh_retention_for_session(db, user, session)
-    reward_summary = rewards.apply_session_rewards(db, user, session)
+    rewards.apply_session_rewards(db, user, session)  # awards once (dedupe keys per session/question)
+    # report the reconstructed view so a first submit and a later retry agree
+    reward_summary = rewards.session_summary(db, user, session)
     if session.actual_duration_minutes:
         from . import duration as duration_service
 
@@ -577,7 +594,9 @@ def _persist_attempt(
     the same response entry - raw history is preserved, never overwritten."""
     answer_key = question.current_answer_key
     if state == AnswerState.NOT_ENTERED.value:
-        result = AttemptResultValue.NOT_EVALUABLE.value
+        # "not entered" is its own outcome: it is neither unanswered nor a
+        # missing answer key, so it must never trigger pending_correction
+        result = AttemptResultValue.NOT_ENTERED.value
     elif not answer_key:
         result = AttemptResultValue.NOT_EVALUABLE.value
     elif state == AnswerState.UNANSWERED.value:
@@ -712,11 +731,19 @@ def session_result(db: Session, session_id: int, idempotent: bool = False) -> di
             {
                 "topic_id": key,
                 "topic_title": topics[key].title if key in topics else None,
-                "total": 0, "correct": 0, "wrong": 0, "unanswered": 0, "not_evaluable": 0,
+                "total": 0, "correct": 0, "wrong": 0, "unanswered": 0,
+                "not_evaluable": 0, "not_entered": 0,
             },
         )
         entry["total"] += 1
-        entry[attempt.result.lower() if attempt.result != "NOT_EVALUABLE" else "not_evaluable"] += 1
+        bucket = attempt.result.lower()
+        if attempt.result == AttemptResultValue.NOT_EVALUABLE.value and attempt.state == AnswerState.NOT_ENTERED.value:
+            bucket = "not_entered"
+        elif attempt.result == AttemptResultValue.NOT_EVALUABLE.value:
+            bucket = "not_evaluable"
+        if bucket not in entry:
+            bucket = "not_evaluable"
+        entry[bucket] += 1
     difficulty_breakdown: dict[str, dict] = {}
     for attempt in attempts:
         key = str(attempt.difficulty_level or "unset")
@@ -751,7 +778,8 @@ def session_result(db: Session, session_id: int, idempotent: bool = False) -> di
         "date": common.jdate(session.planned_date),
         "date_long": common.jdate_long(session.planned_date),
         "idempotent": idempotent,
-        "invariant_ok": (correct + wrong + unanswered + not_evaluable) == total,
+        # correct + wrong + unanswered + not_entered + not_evaluable == total
+        "invariant_ok": (correct + wrong + unanswered + not_entered + not_evaluable) == total,
     }
 
 

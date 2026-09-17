@@ -19,12 +19,24 @@ from sqlalchemy import select
 from . import config
 from .api.routers import analytics, curriculum, exams, goals, imports, lab, planning, questions, system, testing
 from .core.errors import DomainError
+from .core.text import fa_text_deep
 from .db import models
 from .db.base import get_session_factory, init_db
 from .db.seed import seed_all
 
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "frontend")
 FRONTEND_DIR = os.path.normpath(FRONTEND_DIR)
+
+class PersianJSONResponse(JSONResponse):
+    """One place where the Persian-only rule is enforced for outgoing prose.
+
+    Data stays numeric; only human-readable strings get Persian digits, so the
+    UI can never show a Gregorian-looking number or a Latin digit in Persian text.
+    """
+
+    def render(self, content: object) -> bytes:  # type: ignore[override]
+        return super().render(fa_text_deep(content))
+
 
 app = FastAPI(
     title="StudyS459 V3",
@@ -33,6 +45,7 @@ app = FastAPI(
         "معماری: Presentation → Application Services → Domain/Intelligence → Data Access → Database."
     ),
     version=config.MODEL_VERSION,
+    default_response_class=PersianJSONResponse,
 )
 
 app.add_middleware(

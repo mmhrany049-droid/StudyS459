@@ -45,7 +45,10 @@ def bootstrap(payload: BootstrapPayload | None = None, db: Session = Depends(get
         "user": {"id": user.id, "display_name": user.display_name, "username": user.username},
         "created": created,
         "seed": seed_result,
+        "today": common.jdate(today_local()),
+        "date_long": common.jdate_long(today_local()),
         "week_label": week_label_fa(today_local()),
+        "onboarding": {"done": bool(user.onboarding_completed)},
         "note": "هیچ دادهی ساختگی ساخته نمی‌شود؛ فقط محتوای کتاب‌های موجود در مخزن و پیش‌فرض‌های مستندشده بارگذاری می‌شود.",
     }
 

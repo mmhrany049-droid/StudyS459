@@ -132,6 +132,43 @@ def apply_session_rewards(db: Session, user: models.User, session: models.TestSe
     return {"coins": coins, "events": events, "streak": user.current_streak, "badges": badge_list}
 
 
+def session_summary(db: Session, user: models.User, session: models.TestSession) -> dict:
+    """Re-read (never re-award) the rewards of a finished session.
+
+    Used when a completed session is finished again: the same payload must come
+    back without duplicating coins.
+    """
+    if session.is_imported or session.session_type == "imported":
+        return {
+            "coins": 0,
+            "events": [],
+            "note": "جلسه واردشده از گذشته است؛ طبق قوانین سکه تعلق نمی‌گیرد.",
+        }
+    day = session.planned_date or today_local()
+    day_keys = {f"day:{day.isoformat()}:all_done", f"streak:{day.isoformat()}"}
+    rows = [
+        row
+        for row in db.scalars(
+            select(models.RewardEvent).where(models.RewardEvent.user_id == user.id)
+        )
+        if (row.dedupe_key or "").startswith(f"session:{session.id}:") or row.dedupe_key in day_keys
+    ]
+    return {
+        "coins": sum(row.coins or 0 for row in rows),
+        "events": [{"type": row.event_type, "coins": row.coins or 0} for row in rows],
+        "streak": user.current_streak,
+        "badges": [
+            {"code": badge.code, "title": badge.title, "icon": badge.icon}
+            for badge in db.scalars(
+                select(models.Badge)
+                .join(models.UserBadge, models.UserBadge.badge_id == models.Badge.id)
+                .where(models.UserBadge.user_id == user.id)
+            )
+        ],
+        "note": "بازخوانی رویدادهای ثبت‌شده؛ سکه دوباره داده نمی‌شود.",
+    }
+
+
 def award_task_completion(db: Session, user: models.User, task: models.StudyTask) -> dict:
     amount = config.value("reward.coins_task_completed")
     event = _award(

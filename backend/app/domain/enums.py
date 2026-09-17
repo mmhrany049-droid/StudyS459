@@ -51,6 +51,7 @@ class AttemptResultValue(str, Enum):
     WRONG = "WRONG"
     UNANSWERED = "UNANSWERED"
     NOT_EVALUABLE = "NOT_EVALUABLE"  # no answer key yet -> pending correction
+    NOT_ENTERED = "NOT_ENTERED"      # the row was never recorded: not "unanswered"
 
 
 class SessionType(str, Enum):
