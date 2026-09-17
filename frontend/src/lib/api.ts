@@ -36,6 +36,8 @@ export const api = {
   patch: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "PATCH", body: JSON.stringify(body ?? {}) }),
   del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  // multipart upload: let the browser set the boundary, never force JSON
+  upload: <T>(path: string, form: FormData) => request<T>(path, { method: "POST", body: form, headers: {} }),
 };
 
 // ---------------------------------------------------------------------------

@@ -252,3 +252,48 @@ def test_import_planner_review_exam_goal_lab_contract(client):
     assert {"enabled", "chat_id", "optional", "message"}.issubset(telegram)
     progress = _get(client, "/progress/overview")
     assert {"attempts", "answered", "not_entered", "accuracy", "coverage", "weaknesses", "trends"}.issubset(progress)
+
+
+def test_checkin_reflection_recovery_and_exam_files_contract(client):
+    """The forms the student fills in: daily check-in, weekly reflection, recovery, exam files."""
+    _seed_screen_data(client)
+
+    start = _get(client, "/checkins/questions", phase="start")
+    assert start["phase"] == "start" and start["questions"]
+    question = start["questions"][0]
+    assert {"code", "text", "kind"}.issubset(question)
+    if question["kind"] == "scale":
+        assert {"min", "max"}.issubset(question)
+    saved = _post(client, "/checkins", {"phase": "start", "answers": {question["code"]: 4}})
+    assert {"phase", "date", "skipped", "recorded"}.issubset(saved)
+    assert saved["recorded"] is True
+    skipped = _post(client, "/checkins", {"phase": "end", "skipped": True})
+    assert skipped["skipped"] is True
+
+    reflections = _get(client, "/reflections/questions")
+    assert reflections["questions"]
+    assert {"code", "text", "kind"}.issubset(reflections["questions"][0])
+    reflection = _post(client, "/reflections", {"answers": {reflections["questions"][0]["code"]: "فصل ۲"}})
+    assert set(["week_start", "recorded", "skipped"]).issubset(reflection)
+
+    recovery = _post(client, "/tasks/recovery")
+    assert set(["missed", "moves", "message"]).issubset(recovery)
+
+    exam = _post(client, "/exams", {"title": "امتحان با فایل", "exam_type": "school", "date": "1405/10/01"})
+    bad = client.post(
+        f"/api/exams/{exam['id']}/files",
+        files={"file": ("payload.exe", b"nope", "application/octet-stream")},
+    )
+    assert bad.status_code == 422, "only documents and images may be attached"
+    uploaded = client.post(
+        f"/api/exams/{exam['id']}/files",
+        files={"file": ("پاسخبرگ.pdf", b"%PDF-1.4 sample", "application/pdf")},
+    )
+    assert uploaded.status_code == 200, uploaded.text
+    file_meta = uploaded.json()["files"][0]
+    assert {"name", "stored_name", "size", "content_type", "uploaded_at"}.issubset(file_meta)
+    assert file_meta["stored_name"].isascii(), "storage names stay ASCII"
+    listed = [row for row in _get(client, "/exams")["exams"] if row["id"] == exam["id"]][0]
+    assert listed["files"] and listed["files"][0]["name"] == "پاسخبرگ.pdf"
+    download = client.get(f"/api/exams/{exam['id']}/files/{file_meta['stored_name']}")
+    assert download.status_code == 200 and download.content == b"%PDF-1.4 sample"

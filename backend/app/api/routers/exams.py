@@ -6,10 +6,11 @@ import datetime as _dt
 
 from typing import Optional
 
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Depends, File, Query, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from ...core.errors import ValidationError
 from ...core.timeutil import today_local, week_end, week_start
 from ...db import models
 from ... import config
@@ -223,3 +224,92 @@ def retake(
     exam = exams_service.create_retake(db, user, exam_id, payload)
     db.commit()
     return exams_service.exam_payload(db, exam, detailed=True)
+
+
+# ---------------------------------------------------------------------------
+# Exam files: the paper/answer-sheet scan the student keeps for this exam.
+# Stored outside git (backend/data/) with metadata on the exam row.
+# ---------------------------------------------------------------------------
+
+MAX_FILE_BYTES = 25 * 1024 * 1024
+ALLOWED_SUFFIXES = {".pdf", ".jpg", ".jpeg", ".png", ".webp", ".docx", ".txt", ".heic"}
+
+
+def _files_root() -> str:
+    import os
+
+    root = os.environ.get("STUDYS459_FILES_DIR") or os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "exam_files"
+    )
+    return os.path.abspath(root)
+
+
+@router.post("/exams/{exam_id}/files")
+async def upload_exam_file(
+    exam_id: int,
+    file: UploadFile = File(...),
+    user: models.User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    import os
+    import re
+
+    exam = db.get(models.Exam, exam_id)
+    if not exam or exam.user_id != user.id:
+        from ...core.errors import NotFoundError
+
+        raise NotFoundError("امتحان پیدا نشد.")
+    raw_name = os.path.basename(file.filename or "file")
+    suffix = os.path.splitext(raw_name)[1].lower()
+    if suffix not in ALLOWED_SUFFIXES:
+        raise ValidationError("فقط فایل PDF، تصویر یا متن برای امتحان قابل ضمیمه است.")
+    content = await file.read()
+    if not content:
+        raise ValidationError("فایل خالی است.")
+    if len(content) > MAX_FILE_BYTES:
+        raise ValidationError("حجم فایل بیش از حد مجاز است (۲۵ مگابایت).")
+
+    safe = re.sub(r"[^A-Za-z0-9._-]", "_", os.path.splitext(raw_name)[0])[:60] or "file"
+    folder = os.path.join(_files_root(), str(exam_id))
+    os.makedirs(folder, exist_ok=True)
+    stored_name = f"{today_local().isoformat()}-{safe}{suffix}"  # storage name stays ASCII
+    with open(os.path.join(folder, stored_name), "wb") as handle:
+        handle.write(content)
+
+    metadata = {
+        "name": raw_name,
+        "stored_name": stored_name,
+        "size": len(content),
+        "content_type": file.content_type,
+        "uploaded_at": common.jdatetime(_dt.datetime.now()),
+    }
+    files = list(exam.files or [])
+    files = [item for item in files if item.get("stored_name") != stored_name] + [metadata]
+    exam.files = files
+    db.commit()
+    return {"exam_id": exam_id, "files": files, "note": "فایل روی همین دستگاه ذخیره می‌شود و در گیت نمی‌آید."}
+
+
+@router.get("/exams/{exam_id}/files/{stored_name}")
+def download_exam_file(
+    exam_id: int, stored_name: str, user: models.User = Depends(current_user), db: Session = Depends(get_db)
+):
+    import os
+
+    from fastapi.responses import FileResponse
+
+    exam = db.get(models.Exam, exam_id)
+    if not exam or exam.user_id != user.id:
+        from ...core.errors import NotFoundError
+
+        raise NotFoundError("امتحان پیدا نشد.")
+    if not any(item.get("stored_name") == stored_name for item in (exam.files or [])):
+        from ...core.errors import NotFoundError
+
+        raise NotFoundError("فایل پیدا نشد.")
+    path = os.path.join(_files_root(), str(exam_id), os.path.basename(stored_name))
+    if not os.path.exists(path):
+        from ...core.errors import NotFoundError
+
+        raise NotFoundError("فایل روی دیسک پیدا نشد.")
+    return FileResponse(path, filename=os.path.basename(stored_name))

@@ -12,10 +12,15 @@ export default function Exams() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<number | null>(null);
+  const [retakeFor, setRetakeFor] = useState<number | null>(null);
+  const [retakeDate, setRetakeDate] = useState<string>("");
   const [form, setForm] = useState({
     title: "",
     exam_type: "school",
     date: todayJalali(),
+    start_hour: "",
+    start_minute: "00",
     total_questions: "",
     planned_duration_minutes: "",
     keep_for_retake: false,
@@ -30,6 +35,22 @@ export default function Exams() {
   }
   useEffect(load, []);
 
+  async function upload(examId: number, file: File) {
+    setUploading(examId);
+    setError(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      await api.upload(`/exams/${examId}/files`, body);
+      setNotice("فایل ضمیمه شد؛ روی همین دستگاه ذخیره می‌شود و در گیت نمی‌آید.");
+      load();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setUploading(null);
+    }
+  }
+
   async function create() {
     if (!form.title) {
       setError("عنوان امتحان را وارد کن.");
@@ -42,6 +63,7 @@ export default function Exams() {
         title: form.title,
         exam_type: form.exam_type,
         date: form.date,
+        start_time: form.start_hour ? `${form.start_hour.padStart(2, "0")}:${form.start_minute}` : undefined,
         total_questions: form.total_questions ? Number(form.total_questions) : undefined,
         planned_duration_minutes: form.planned_duration_minutes ? Number(form.planned_duration_minutes) : undefined,
         keep_for_retake: form.keep_for_retake,
@@ -81,6 +103,21 @@ export default function Exams() {
                         {exam.retake_of_id && <Badge tone="warn">نوبت تکرار</Badge>}
                         {exam.keep_for_retake && <Badge tone="muted">برای تکرار نگه داشته شده</Badge>}
                       </div>
+                      {(exam.files ?? []).length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {(exam.files ?? []).map((file: any) => (
+                            <a
+                              key={file.stored_name}
+                              className="badge-muted"
+                              href={`/api/exams/${exam.id}/files/${encodeURIComponent(file.stored_name)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {file.name}
+                            </a>
+                          ))}
+                        </div>
+                      )}
                       <div className="muted mt-1">
                         {exam.date}
                         {exam.days_left !== undefined && exam.days_left !== null
@@ -96,16 +133,48 @@ export default function Exams() {
                       ) : exam.planned_duration_minutes ? (
                         <span className="muted">{toPersianDigits(exam.planned_duration_minutes)} دقیقه</span>
                       ) : null}
-                      <button
-                        className="btn-ghost btn-xs"
-                        onClick={async () => {
-                          await api.post(`/exams/${exam.id}/retake`, {});
-                          setNotice("نوبت جدید ساخته شد؛ تاریخچه نوبت قبلی دست‌نخورده ماند.");
-                          load();
-                        }}
-                      >
-                        نوبت جدید
-                      </button>
+                      <label className="btn-ghost btn-xs cursor-pointer">
+                        {uploading === exam.id ? "در حال ضمیمه…" : "ضمیمه فایل"}
+                        <input
+                          type="file"
+                          className="hidden"
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) upload(exam.id, file);
+                            event.target.value = "";
+                          }}
+                        />
+                      </label>
+                      {retakeFor === exam.id ? (
+                        <div className="grid gap-2 rounded-xl bg-ink-50 p-2">
+                          <JalaliDateInput
+                            value={retakeDate}
+                            onChange={setRetakeDate}
+                            label="تاریخ نوبت جدید (خالی = همان تاریخ)"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              className="btn-primary btn-xs"
+                              onClick={async () => {
+                                await api.post(`/exams/${exam.id}/retake`, retakeDate ? { date: retakeDate } : {});
+                                setNotice("نوبت جدید ساخته شد؛ تاریخچه نوبت قبلی دست‌نخورده ماند.");
+                                setRetakeFor(null);
+                                setRetakeDate("");
+                                load();
+                              }}
+                            >
+                              ثبت نوبت
+                            </button>
+                            <button className="btn-ghost btn-xs" onClick={() => setRetakeFor(null)}>
+                              انصراف
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button className="btn-ghost btn-xs" onClick={() => setRetakeFor(exam.id)}>
+                          نوبت جدید
+                        </button>
+                      )}
                     </div>
                   </div>
                 </li>
@@ -173,6 +242,38 @@ export default function Exams() {
               </select>
             </div>
             <JalaliDateInput value={form.date} onChange={(value) => setForm({ ...form, date: value })} label="تاریخ (شمسی)" required />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="label">ساعت شروع (اختیاری)</label>
+                <select
+                  className="input"
+                  value={form.start_hour}
+                  onChange={(event) => setForm({ ...form, start_hour: event.target.value })}
+                >
+                  <option value="">بدون ساعت</option>
+                  {Array.from({ length: 24 }, (_, hour) => hour).map((hour) => (
+                    <option key={hour} value={String(hour)}>
+                      {toPersianDigits(String(hour).padStart(2, "0"))}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">دقیقه</label>
+                <select
+                  className="input"
+                  value={form.start_minute}
+                  onChange={(event) => setForm({ ...form, start_minute: event.target.value })}
+                  disabled={!form.start_hour}
+                >
+                  {["00", "15", "30", "45"].map((minute) => (
+                    <option key={minute} value={minute}>
+                      {toPersianDigits(minute)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="label">تعداد سؤال</label>

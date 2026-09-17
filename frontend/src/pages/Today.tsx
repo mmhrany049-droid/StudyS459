@@ -18,10 +18,12 @@ export default function Today() {
   const [busy, setBusy] = useState<number | null>(null);
   const [finishId, setFinishId] = useState<number | null>(null);
   const [actualMinutes, setActualMinutes] = useState<string>("");
+  const [recovery, setRecovery] = useState<any>(null);
 
   function load() {
     setError(null);
     api.get<TasksPayload>("/tasks").then(setData).catch((err) => setError(err.message));
+    api.post<any>("/tasks/recovery", {}).then(setRecovery).catch(() => undefined);
   }
   useEffect(load, []);
 
@@ -135,6 +137,30 @@ export default function Today() {
               ))}
             </ul>
           )}
+        </Card>
+
+        <Card title="بازیابی کارهای عقب‌افتاده">
+          {recovery && (
+            <>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Stat label="کار عقب‌افتاده" value={toPersianDigits(recovery.missed ?? 0)} />
+                <Stat label="پیشنهاد جابه‌جایی" value={toPersianDigits((recovery.moves ?? []).length)} />
+                <Stat label="حذف خودکار" value="هیچ" hint="کار عقب‌افتاده پاک نمی‌شود؛ فقط توزیع می‌شود." />
+              </div>
+              <p className="muted mt-3">{recovery.message}</p>
+              {(recovery.moves ?? []).length > 0 && (
+                <ul className="mt-3 grid gap-2 text-xs text-ink-600">
+                  {(recovery.moves ?? []).slice(0, 5).map((move: any, index: number) => (
+                    <li key={index} className="rounded-xl bg-ink-50 p-2">
+                      {move.title ?? move.task_id} → {move.to_date ?? move.suggested_date}
+                      {move.reason ? ` (${move.reason})` : ""}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+          {!recovery && <p className="muted">در حال بررسی…</p>}
         </Card>
 
         <Card title="ظرفیت امروز">

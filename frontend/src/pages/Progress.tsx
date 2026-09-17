@@ -3,6 +3,67 @@ import { api } from "../lib/api";
 import { Card, Empty, ErrorBox, Spinner, Badge, Meter, Stat, ExplainBox } from "../components/ui";
 import { diagnosisLabel, faNumber, percent, toPersianDigits } from "../lib/format";
 
+
+
+function ReflectionCard() {
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  const [notice, setNotice] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    api.get<any>("/reflections/questions").then((payload) => setQuestions(payload.questions ?? [])).catch(() => undefined);
+  }, []);
+
+  async function save(skipped: boolean) {
+    await api.post("/reflections", { answers: skipped ? {} : answers, skipped });
+    setDone(true);
+    setNotice(skipped ? "این هفته رد شد؛ هفته بعد دوباره پرسیده می‌شود." : "بازتاب هفته ثبت شد.");
+  }
+
+  if (!questions.length) return null;
+  return (
+    <div className="grid gap-3">
+      {questions.map((question) => (
+        <div key={question.code} className="grid gap-1">
+          <span className="text-xs">{question.text}</span>
+          {question.kind === "scale" ? (
+            <div className="flex flex-wrap gap-1">
+              {Array.from({ length: (question.max ?? 5) - (question.min ?? 1) + 1 }, (_, index) => (question.min ?? 1) + index).map(
+                (value) => (
+                  <button
+                    key={value}
+                    className={answers[question.code] === value ? "btn-primary btn-xs" : "btn-ghost btn-xs"}
+                    onClick={() => setAnswers({ ...answers, [question.code]: value })}
+                  >
+                    {toPersianDigits(value)}
+                  </button>
+                ),
+              )}
+            </div>
+          ) : (
+            <input
+              className="input"
+              value={(answers[question.code] as string) ?? ""}
+              onChange={(event) => setAnswers({ ...answers, [question.code]: event.target.value })}
+            />
+          )}
+        </div>
+      ))}
+      <div className="flex flex-wrap gap-2">
+        <button className="btn-primary btn-xs" disabled={done} onClick={() => save(false)}>
+          ثبت بازتاب هفته
+        </button>
+        <button className="btn-ghost btn-xs" disabled={done} onClick={() => save(true)}>
+          این هفته نه
+        </button>
+      </div>
+      <span className="muted">بازتاب، خودگزارشی است و با داده رفتار قاطی نمی‌شود.</span>
+      {notice && <div className="rounded-xl bg-brand-50 p-2 text-xs text-brand-700">{notice}</div>}
+    </div>
+  );
+}
+
 export default function Progress() {
   const [overview, setOverview] = useState<any>(null);
   const [weaknesses, setWeaknesses] = useState<any[]>([]);
@@ -123,6 +184,10 @@ export default function Progress() {
               <p className="muted mt-2">{trends?.note}</p>
             </>
           )}
+        </Card>
+
+        <Card title="بازتاب هفته">
+          <ReflectionCard />
         </Card>
 
         <Card title="بازسازی مقادیر مشتق">

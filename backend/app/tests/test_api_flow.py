@@ -172,3 +172,39 @@ def test_jalali_only_and_week_starts_on_saturday(client):
     capacity = client.get("/api/capacity/today").json()
     assert capacity["theoretical_minutes"] >= capacity["realistic_minutes"]
     assert not LATIN_DIGIT.search(str(capacity["explanation"]))
+
+
+def test_exam_start_time_parsing_and_file_attachments(client):
+    """Exam «چند نوبت + زمان» and «امتحان با فایل» from the V2.2 acceptance list."""
+    _bootstrap(client)
+    created = client.post(
+        "/api/exams",
+        json={"title": "امتحان با ساعت", "exam_type": "school", "date": "1405/10/01", "start_time": "۰۸:۳۰"},
+    )
+    assert created.status_code == 200, created.text
+    exam = created.json()
+    assert exam["start_time"] == "08:30", "Persian clock input must survive as a Persian-visible time"
+
+    for bad in ("25:99", "ظهر"):
+        rejected = client.post(
+            "/api/exams",
+            json={"title": "بد", "exam_type": "school", "date": "1405/10/01", "start_time": bad},
+        )
+        assert rejected.status_code in (400, 422), f"{bad} must be rejected, not stored"
+
+    updated = client.patch(f"/api/exams/{exam['id']}", json={"start_time": "7"})
+    assert updated.status_code == 200 and updated.json()["start_time"] == "07:00"
+
+    uploaded = client.post(
+        f"/api/exams/{exam['id']}/files",
+        files={"file": ("پاسخبرگ.pdf", b"%PDF-1.4 exam", "application/pdf")},
+    )
+    assert uploaded.status_code == 200, uploaded.text
+    stored = uploaded.json()["files"][0]["stored_name"]
+    downloaded = client.get(f"/api/exams/{exam['id']}/files/{stored}")
+    assert downloaded.status_code == 200 and downloaded.content == b"%PDF-1.4 exam"
+
+    retake = client.post(f"/api/exams/{exam['id']}/retake", json={})
+    assert retake.status_code == 200, retake.text
+    history = [row for row in client.get("/api/exams").json()["exams"] if row["id"] == exam["id"]][0]
+    assert history["start_time"] == "07:00", "a retake must not rewrite the original exam"

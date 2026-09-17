@@ -35,6 +35,26 @@ MODEL_VERSION = config.MODEL_VERSION
 # ---------------------------------------------------------------------------
 
 
+def parse_clock(value) -> Optional[_dt.time]:
+    """«۰۸:۳۰» / «8:30» / «8» -> datetime.time, so SQLite never sees a raw string."""
+    if value in (None, ""):
+        return None
+    if isinstance(value, _dt.time):
+        return value
+    text = common.normalize_digits(str(value)).strip().replace(".", ":")
+    if ":" in text:
+        hour_text, _, minute_text = text.partition(":")
+    else:
+        hour_text, minute_text = text, "0"
+    try:
+        hour, minute = int(hour_text), int(minute_text or 0)
+    except (TypeError, ValueError):
+        raise ValidationError("ساعت شروع باید به شکل ۸:۳۰ باشد.")
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        raise ValidationError("ساعت شروع معتبر نیست.")
+    return _dt.time(hour=hour, minute=minute)
+
+
 def create_exam(db: Session, user: models.User, payload: dict) -> models.Exam:
     exam_type = payload.get("exam_type", ExamType.SCHOOL.value)
     if exam_type not in {t.value for t in ExamType}:
@@ -55,7 +75,7 @@ def create_exam(db: Session, user: models.User, payload: dict) -> models.Exam:
         subject_id=common.to_int(payload.get("subject_id")),
         provider=payload.get("provider"),
         exam_date=exam_date,
-        start_time=payload.get("start_time"),
+        start_time=parse_clock(payload.get("start_time")),
         status=payload.get("status", ExamStatus.PLANNED.value),
         total_questions=common.to_int(payload.get("total_questions")),
         planned_question_count=common.to_int(payload.get("planned_question_count")),
@@ -101,7 +121,7 @@ def update_exam(db: Session, user: models.User, exam_id: int, changes: dict) -> 
     }
     for key, attribute in mapping.items():
         if key in changes:
-            setattr(exam, attribute, changes[key])
+            setattr(exam, attribute, parse_clock(changes[key]) if key == "start_time" else changes[key])
     if changes.get("exam_date"):
         exam.exam_date = common.parse_date_if_string(changes["exam_date"])
     db.flush()
@@ -540,7 +560,10 @@ def create_retake(db: Session, user: models.User, exam_id: int, payload: dict) -
             "exam_type": original.exam_type,
             "title": payload.get("title") or f"{original.title} — تکرار {(original.attempt_no or 1) + 1}",
             "provider": original.provider,
-            "exam_date": payload.get("exam_date"),
+            # a retake keeps the same content but needs its own day: the user may
+            # pass a new date, otherwise the original date is reused (never silent +N days)
+            "exam_date": payload.get("exam_date") or payload.get("date") or original.exam_date,
+            "start_time": payload.get("start_time") or original.start_time,
             "subject_id": original.subject_id,
             "total_questions": original.total_questions,
             "planned_question_count": original.planned_question_count,

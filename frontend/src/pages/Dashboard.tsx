@@ -4,6 +4,104 @@ import { api, Dashboard as DashboardShape, Suggestion } from "../lib/api";
 import { Card, Empty, ErrorBox, ExplainBox, Meter, Spinner, Badge } from "../components/ui";
 import { confidenceBand, faNumber, minutes, percent, toPersianDigits,  statusLabel } from "../lib/format";
 
+const CHECKIN_LABEL: Record<string, string> = {
+  energy: "انرژی",
+  sleep: "خواب",
+  free_time: "وقت آزاد واقعی",
+  mental_priority: "ذهن درگیر",
+  plan_followed: "پیش‌رفت طبق برنامه",
+  focus: "تمرکز",
+  stress: "فشار",
+  mood: "حال",
+};
+
+function CheckinCard({ checkin, onSaved }: { checkin: any; onSaved: () => void }) {
+  const startQuestions = (checkin?.start_questions ?? []) as any[];
+  const endQuestions = (checkin?.end_questions ?? []) as any[];
+  const questions = startQuestions.length ? startQuestions : endQuestions;
+  const phase = startQuestions.length ? "start" : "end";
+  const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function save(skipped: boolean) {
+    setBusy(true);
+    try {
+      await api.post("/checkins", { phase, answers: skipped ? {} : answers, skipped });
+      setNotice(skipped ? "امروز ثبت نشد؛ هیچ امتیاز منفی‌ای ندارد و بعداً هم می‌شود ثبت کرد." : "ثبت شد؛ فقط به‌عنوان داده، نه برچسب شخصیتی.");
+      onSaved();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!questions.length) {
+    const dims = (checkin?.state?.dimensions ?? []) as any[];
+    return (
+      <div className="mt-2 grid gap-2">
+        <p className="muted">{checkin?.state?.message ?? "امروز ثبت وضعیتی انجام نشده است."}</p>
+        {dims.length > 0 && (
+          <div className="grid gap-1">
+            {dims
+              .filter((dim) => dim.value !== null && dim.value !== undefined)
+              .map((dim) => (
+                <div key={dim.key} className="flex items-center justify-between text-xs">
+                  <span>{dim.label}</span>
+                  <span className="num">{faNumber(dim.value, 2)}</span>
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 grid gap-3">
+      <div className="text-xs font-semibold text-ink-800">
+        {phase === "start" ? "پرسش آغاز روز" : "پرسش پایان روز"}
+      </div>
+      {questions.map((question) => (
+        <div key={question.code} className="grid gap-1">
+          <span className="text-xs">{question.text}</span>
+          {question.kind === "scale" ? (
+            <div className="flex flex-wrap gap-1">
+              {Array.from({ length: (question.max ?? 5) - (question.min ?? 1) + 1 }, (_, index) => (question.min ?? 1) + index).map(
+                (value) => (
+                  <button
+                    key={value}
+                    className={answers[question.code] === value ? "btn-primary btn-xs" : "btn-ghost btn-xs"}
+                    onClick={() => setAnswers({ ...answers, [question.code]: value })}
+                  >
+                    {toPersianDigits(value)}
+                  </button>
+                ),
+              )}
+            </div>
+          ) : (
+            <input
+              className="input"
+              value={(answers[question.code] as string) ?? ""}
+              onChange={(event) => setAnswers({ ...answers, [question.code]: event.target.value })}
+              placeholder={CHECKIN_LABEL[question.code] ?? ""}
+            />
+          )}
+        </div>
+      ))}
+      <div className="flex flex-wrap gap-2">
+        <button className="btn-primary btn-xs" disabled={busy} onClick={() => save(false)}>
+          ثبت {phase === "start" ? "آغاز روز" : "پایان روز"}
+        </button>
+        <button className="btn-ghost btn-xs" disabled={busy} onClick={() => save(true)}>
+          امروز نه
+        </button>
+      </div>
+      <span className="muted">وضعیت لحظه‌ای است، نه شخصیت؛ و ثبت نکردن هم یک پاسخ معتبر است.</span>
+      {notice && <div className="rounded-xl bg-brand-50 p-2 text-xs text-brand-700">{notice}</div>}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [data, setData] = useState<DashboardShape | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -226,7 +324,7 @@ export default function Dashboard() {
             {midweek?.warning && (
               <p className="mt-2 rounded-xl bg-warn-100/70 p-3 text-xs text-warn-600">{midweek.warning}</p>
             )}
-            {checkin?.message && <p className="muted mt-2">{checkin.message}</p>}
+            <CheckinCard checkin={checkin} onSaved={load} />
           </Card>
         )}
       </div>
