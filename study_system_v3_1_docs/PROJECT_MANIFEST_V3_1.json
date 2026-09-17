@@ -1,0 +1,22 @@
+{
+  "version": "3.1",
+  "base_branch": "arena/01a0ae6a-studys459",
+  "repo": "https://github.com/mmhrany049-droid/StudyS459",
+  "principle": "no_rewrite_from_scratch",
+  "priority_order": [
+    "restore_missing_features",
+    "fix_bugs",
+    "complete_v3_gaps",
+    "ux_ui",
+    "new_features_within_v3_frame"
+  ],
+  "critical": [
+    "unified_exam_system",
+    "chemistry_checkup_coverage_range",
+    "exam_center_past_upcoming",
+    "curriculum_g10_g12_plannable_only_with_tests",
+    "jalali_calendar_1405_1408",
+    "purposeful_questioning"
+  ],
+  "docs_only_package": true
+}
