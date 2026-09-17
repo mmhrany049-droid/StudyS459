@@ -15,6 +15,11 @@ export default function Exams() {
   const [uploading, setUploading] = useState<number | null>(null);
   const [retakeFor, setRetakeFor] = useState<number | null>(null);
   const [retakeDate, setRetakeDate] = useState<string>("");
+  const [topicsFor, setTopicsFor] = useState<number | null>(null);
+  const [topicsData, setTopicsData] = useState<any>(null);
+  const [bookId, setBookId] = useState<number | null>(null);
+  const [tree, setTree] = useState<any>(null);
+  const [prep, setPrep] = useState<any[]>([]);
   const [form, setForm] = useState({
     title: "",
     exam_type: "school",
@@ -32,6 +37,31 @@ export default function Exams() {
     api.get<any>("/exams/calendar").then(setCalendar).catch(() => undefined);
     api.get<any>("/mocks/retake-list").then((payload) => setRetakes(payload.mocks ?? [])).catch(() => undefined);
     api.get<any>("/mocks/quiet-suggestions").then(setQuiet).catch(() => undefined);
+    api
+      .get<any>("/exams/prep-suggestions")
+      .then((payload) => setPrep(payload.suggestions ?? []))
+      .catch(() => undefined);
+    api
+      .get<any>("/books")
+      .then((payload) => {
+        const first = payload.books?.[0];
+        if (first) {
+          setBookId(first.id);
+          api.get<any>(`/books/${first.id}/tree`).then(setTree).catch(() => undefined);
+        }
+      })
+      .catch(() => undefined);
+  }
+
+  async function openTopics(examId: number) {
+    setTopicsFor(topicsFor === examId ? null : examId);
+    const data = await api.get<any>(`/exams/${examId}/topics`);
+    setTopicsData(data);
+  }
+
+  async function markTopic(examId: number, topicId: number, checked: boolean) {
+    await api.post(`/exams/${examId}/topics`, { topic_id: topicId, mark_kind: "planned", checked, cascade: true });
+    openTopics(examId);
   }
   useEffect(load, []);
 
@@ -103,6 +133,9 @@ export default function Exams() {
                         {exam.retake_of_id && <Badge tone="warn">نوبت تکرار</Badge>}
                         {exam.keep_for_retake && <Badge tone="muted">برای تکرار نگه داشته شده</Badge>}
                       </div>
+                      <button className="btn-ghost btn-xs" onClick={() => openTopics(exam.id)}>
+                        مباحث امتحان
+                      </button>
                       {(exam.files ?? []).length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1">
                           {(exam.files ?? []).map((file: any) => (
@@ -119,6 +152,7 @@ export default function Exams() {
                         </div>
                       )}
                       <div className="muted mt-1">
+                        {exam.start_time ? `ساعت ${toPersianDigits(exam.start_time)} — ` : ""}
                         {exam.date}
                         {exam.days_left !== undefined && exam.days_left !== null
                           ? exam.days_left >= 0
@@ -177,11 +211,71 @@ export default function Exams() {
                       )}
                     </div>
                   </div>
+                  {topicsFor === exam.id && (
+                    <div className="mt-3 grid gap-2 rounded-xl bg-ink-50 p-3 text-xs">
+                      <div className="font-semibold text-ink-800">
+                        مباحث اعلام‌شده این امتحان (لایه برنامه‌ریزی‌شده از پوشش واقعی جدا است)
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {(topicsData?.planned ?? []).slice(0, 12).map((row: any) => (
+                          <span key={row.topic_id} className="badge-muted">
+                            {row.title}
+                          </span>
+                        ))}
+                        {(topicsData?.planned ?? []).length === 0 && <span className="muted">هنوز مبحثی علامت نخورده است.</span>}
+                      </div>
+                      {topicsData?.comparison && (
+                        <p className="muted">
+                          پوشش برنامه‌ریزی‌شده {toPersianDigits(topicsData.comparison.planned_count)} مبحث، پوشش واقعی{" "}
+                          {toPersianDigits(topicsData.comparison.actual_count)} مبحث.
+                        </p>
+                      )}
+                      <div className="grid gap-1">
+                        {(tree?.topics ?? []).slice(0, 6).map((node: any) => {
+                          const marked = (topicsData?.planned ?? []).some((row: any) => row.topic_id === node.id);
+                          return (
+                            <label key={node.id} className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 accent-brand-600"
+                                checked={marked}
+                                onChange={(event) => markTopic(exam.id, node.id, event.target.checked)}
+                              />
+                              <span>{node.title}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      <span className="muted">{bookId ? "مباحث از کتاب فعال انتخاب می‌شوند." : ""}</span>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
           )}
         </Card>
+
+        {prep.length > 0 && (
+          <Card title="آمادگی امتحان‌های پیش‌رو">
+            <ul className="grid gap-2 text-xs text-ink-600">
+              {prep.map((item: any, index: number) => (
+                <li key={index} className="rounded-xl bg-ink-50 p-3">
+                  <div className="font-medium text-ink-800">
+                    {item.exam_title} — {toPersianDigits(item.days_left)} روز مانده
+                  </div>
+                  <div className="muted mt-1">
+                    {toPersianDigits(item.topic_count)} مبحث علامت‌خورده؛ ضعیف‌ترین‌ها:{" "}
+                    {(item.weakest_topics ?? [])
+                      .slice(0, 3)
+                      .map((topic: any) => topic.topic_title)
+                      .join("، ")}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="muted mt-3">پیشنهاد آمادگی فقط از مباحث همان امتحان ساخته می‌شود و کم‌سروصدا ارائه می‌گردد.</p>
+          </Card>
+        )}
 
         {calendar?.exams?.length > 0 && (
           <Card title="تقویم امتحان‌ها">
