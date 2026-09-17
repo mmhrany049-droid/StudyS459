@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, PlanningSession } from "../lib/api";
 import { Card, Empty, ErrorBox, Spinner, Badge, ExplainBox, Stat } from "../components/ui";
+import { JalaliDateInput } from "../components/JalaliDateInput";
 import { faNumber, minutes, toPersianDigits } from "../lib/format";
 
 export default function Planner() {
@@ -10,6 +11,8 @@ export default function Planner() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [decisions, setDecisions] = useState<Record<number, string>>({});
+  const [typeRegistry, setTypeRegistry] = useState<any[]>([]);
+  const [draft, setDraft] = useState({ title: "", task_type: "practice_test", planned_date: "", planned_minutes: "", planned_question_count: "" });
 
   function load() {
     setError(null);
@@ -17,7 +20,22 @@ export default function Planner() {
       .get<PlanningSession>("/planning/current")
       .then(setSession)
       .catch((err) => setError(err.message));
-    api.get<any>("/planning/week").then(setWeek).catch(() => undefined);
+    api
+      .get<any>("/planning/week")
+      .then((payload) => {
+        setWeek(payload);
+        const today = (payload?.days ?? []).find((day: any) => day.is_today) ?? payload?.days?.[0];
+        if (today?.date) setDraft((current) => (current.planned_date ? current : { ...current, planned_date: today.date }));
+      })
+      .catch(() => undefined);
+    api
+      .get<any>("/tasks/types")
+      .then((payload) => {
+        setTypeRegistry(payload.types ?? []);
+        const preferred = (payload.types ?? []).find((item: any) => item.code === "practice_test");
+        if (preferred) setDraft((current) => ({ ...current, task_type: preferred.code }));
+      })
+      .catch(() => undefined);
   }
   useEffect(load, []);
 
@@ -67,6 +85,33 @@ export default function Planner() {
         code: question.code,
         answer: value,
       });
+      load();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function addManualTask() {
+    if (!draft.title.trim()) {
+      setError("عنوان کار مطالعه را بنویس.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const payload: Record<string, unknown> = {
+        title: draft.title.trim(),
+        task_type: draft.task_type,
+        source: "manual",
+      };
+      if (draft.planned_date) payload.planned_date = draft.planned_date;
+      if (draft.planned_minutes) payload.planned_minutes = Number(draft.planned_minutes);
+      if (draft.planned_question_count) payload.planned_question_count = Number(draft.planned_question_count);
+      const created = await api.post<any>("/tasks", payload);
+      setNotice(`کار «${created.title}» با نوع «${created.type_label}» اضافه شد (${created.duration_label ?? "بدون برآورد"}).`);
+      setDraft({ ...draft, title: "", planned_minutes: "", planned_question_count: "" });
       load();
     } catch (err: any) {
       setError(err.message);
@@ -256,6 +301,57 @@ export default function Planner() {
       </div>
 
       <div className="grid gap-5">
+        <Card title="افزودن کار مطالعه">
+          <div className="grid gap-2">
+            <input
+              className="input"
+              placeholder="عنوان کار"
+              value={draft.title}
+              onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+            />
+            <select className="input" value={draft.task_type} onChange={(event) => setDraft({ ...draft, task_type: event.target.value })}>
+              {typeRegistry.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            <p className="muted">
+              {typeRegistry.find((item) => item.code === draft.task_type)?.hint}
+              {typeRegistry.find((item) => item.code === draft.task_type)?.needs_questions
+                ? " — این نوع با تعداد سؤال سنجیده می‌شود."
+                : " — این نوع سؤال نمی‌خواهد؛ زمانش مهم است."}
+            </p>
+            <JalaliDateInput
+              value={draft.planned_date}
+              onChange={(value) => setDraft({ ...draft, planned_date: value })}
+              label="روز (شمسی)"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                className="input"
+                inputMode="numeric"
+                placeholder="مدت (دقیقه) — اختیاری"
+                value={draft.planned_minutes}
+                onChange={(event) => setDraft({ ...draft, planned_minutes: event.target.value.replace(/[^0-9]/g, "") })}
+              />
+              <input
+                className="input"
+                inputMode="numeric"
+                placeholder="تعداد سؤال — اختیاری"
+                value={draft.planned_question_count}
+                onChange={(event) => setDraft({ ...draft, planned_question_count: event.target.value.replace(/[^0-9]/g, "") })}
+              />
+            </div>
+            <button className="btn-primary btn-xs" onClick={addManualTask} disabled={busy}>
+              افزودن
+            </button>
+            <p className="muted">
+              اگر مدت را خالی بگذاری، برآورد پله‌ای (کم/زیاد) از تاریخ واقعی خودت ساخته می‌شود — نه از عدد ثابت.
+            </p>
+          </div>
+        </Card>
+
         <Card title="چرا این برنامه؟">
           {explanation && Object.keys(explanation).length > 0 ? (
             <div className="grid gap-3 text-xs leading-6">

@@ -70,6 +70,8 @@ PARAMS: Dict[str, Param] = {
     # Calendar
     # ------------------------------------------------------------------
     "calendar.week_start": _p("شنبه", V2_C, USER_SPECIFIC, "Iranian week starts on Saturday"),
+    # V3.1 doc 06: task types are a registry; students/extensions add their own here
+    "tasks.custom_types": _p([], V3_1, USER_SPECIFIC, "انواع کار مطالعهٔ سفارشی (فهرست {code,label,family,needs_questions})"),
     "calendar.coins_timezone": _p("Asia/Tehran", V2_C, USER_SPECIFIC),
     # V3.1 doc 05: the product must be usable for the whole ۱۴۰۵–۱۴۰۸ window
     "calendar.min_year": _p(

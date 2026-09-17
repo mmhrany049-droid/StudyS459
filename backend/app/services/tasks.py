@@ -24,6 +24,7 @@ from .. import config
 from ..core.errors import NotFoundError, ValidationError
 from ..core.timeutil import clamp, now_utc, today_local
 from ..db import models
+from ..domain import task_types
 from ..domain.enums import TaskSource, TaskStatus, TaskType
 from . import common
 
@@ -35,6 +36,8 @@ def task_payload(task: models.StudyTask, *, topic_title: Optional[str] = None) -
         "id": task.id,
         "title": task.title,
         "task_type": task.task_type,
+        "type_label": task_types.label_of(task.task_type),
+        "type_family": task_types.family_of(task.task_type),
         "intervention_type": task.intervention_type,
         "book_id": task.book_id,
         "topic_id": task.topic_id,
@@ -73,6 +76,19 @@ def task_payload(task: models.StudyTask, *, topic_title: Optional[str] = None) -
 
 def create_task(db: Session, user: models.User, payload: dict, *, planner_version: Optional[str] = None) -> models.StudyTask:
     planned_date = common.parse_date_if_string(payload.get("planned_date")) or today_local()
+    raw_type = payload.get("task_type")
+    if not task_types.is_valid(raw_type):
+        raise ValidationError(
+            "نوع کار مطالعه شناخته نشد.",
+            details={
+                "reason": "unknown_task_type",
+                "choices": [item["code"] for item in task_types.payload()["types"]],
+            },
+        )
+    payload = dict(payload)
+    payload["task_type"] = raw_type
+    if not payload.get("intervention_type"):
+        payload["intervention_type"] = task_types.default_intervention(raw_type)
     source = payload.get("source", TaskSource.MANUAL.value)
     question_count = common.to_int(payload.get("planned_question_count"))
     planned_minutes = common.to_int(payload.get("planned_minutes"))

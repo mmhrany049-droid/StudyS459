@@ -153,6 +153,14 @@ def list_tasks(
     return tasks_service.day_tasks(db, user, day)
 
 
+@router.get("/tasks/types")
+def task_types_registry() -> dict:
+    """V3.1 doc 06 — the type list is data, so the UI (and additions) never hard-code it."""
+    from ...domain import task_types as registry
+
+    return registry.payload()
+
+
 @router.post("/tasks")
 def create_task(payload: TaskPayload, user: models.User = Depends(current_user), db: Session = Depends(get_db)) -> dict:
     task = tasks_service.create_task(db, user, payload.model_dump(), planner_version="manual" if payload.source == "manual" else None)

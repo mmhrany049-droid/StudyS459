@@ -497,3 +497,38 @@ def test_phase5_year_view_and_events_and_occasions(client):
     tracked = [row for row in month["days"] if row["date"] == "۱۴۰۵/۰۷/۱۲"][0]
     assert tracked["events_count"] if False else tracked["events"]
     assert month["events_count"] >= 1
+
+
+# ---------------------------------------------------------------------------
+# Phase 6 — extensible study-task types
+# ---------------------------------------------------------------------------
+
+
+def test_phase6_task_types_registry(client):
+    payload = client.get("/api/tasks/types").json()
+    codes = [item["code"] for item in payload["types"]]
+    for required in ("study", "practice_test", "review", "exam_analysis", "notes_completion", "written_practice", "other"):
+        assert required in codes, required
+    legacy = [item for item in payload["types"] if item["legacy"]]
+    assert {"test_session", "read_lesson", "review_session"} <= {item["code"] for item in legacy}
+    assert payload["custom_count"] == 0, "هیچ نوعی داخل کد hard-code نشده جز پایه‌ها"
+    assert payload["families"] and payload["count"] == len(codes)
+
+    created = client.post(
+        "/api/tasks",
+        json={"title": "تمرین ریاضی", "task_type": "practice_test", "planned_question_count": 20},
+    )
+    assert created.status_code == 200, created.text
+    row = created.json()
+    assert row["type_label"] == "تمرین تست"
+    assert row["type_family"] == "practice"
+    assert row["duration_low"] and row["duration_high"] and row["duration_low"] <= row["duration_high"]
+
+    legacy_task = client.post("/api/tasks", json={"title": "مرور قدیمی", "task_type": "review_session"})
+    assert legacy_task.status_code == 200, legacy_task.text
+    assert legacy_task.json()["type_label"] == "جلسه مرور"
+
+    bad = client.post("/api/tasks", json={"title": "کار نامعلوم", "task_type": "حافظه‌خوانی ذهنی"})
+    assert bad.status_code == 422, "نوع ناشناخته باید رد شود نه بی‌صدا «سایر» شود"
+    assert bad.json()["error"]["code"] == "validation_error"
+    assert "choices" in bad.json()["error"]["details"]
