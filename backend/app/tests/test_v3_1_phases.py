@@ -432,3 +432,68 @@ def test_phase4_only_topics_with_a_bank_are_plannable(client):
     assert any(item["topic_id"] == leaf["id"] for item in after["items"]) or after["items"], (
         "پیشنهاد زمان‌دار فقط از مباحث دارای بانک ساخته می‌شود"
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase 5 — Jalali calendar ۱۴۰۵–۱۴۰۸
+# ---------------------------------------------------------------------------
+
+
+def test_phase5_calendar_covers_1405_to_1408(client):
+    rng = client.get("/api/calendar/range").json()
+    assert rng["supported_years"] == [1405, 1406, 1407, 1408]
+    assert rng["min_year"] == 1405 and rng["max_year"] == 1408
+    assert rng["week_start"] == "شنبه"
+    assert rng["leap_years"] == [1408], rng["leap_years"]
+    assert rng["month_lengths"]["1408"][11] == 30, "اسفند ۱۴۰۸ سی روز است"
+    assert rng["month_lengths"]["1405"][11] == 29
+    assert all("T" not in month for month in rng["note"])
+
+    for year in (1405, 1406, 1407, 1408):
+        month = client.get("/api/calendar/month", params={"year": year, "month": 1}).json()
+        assert month["month_title"].startswith("فروردین")
+        assert month["month_length"] == 31
+        assert len(month["days"]) == 31
+        assert month["weekdays"][0] == "شنبه"
+        assert month["days"][0]["weekday_index"] == month["weekday_index_of_first"]
+        assert month["days"][0]["is_holiday"] is True, "اول فروردین تعطیل است"
+
+    bad = client.get("/api/calendar/month", params={"year": 1409, "month": 1})
+    assert bad.status_code == 422, "خارج از بازهٔ پشتیبانی باید رد شود"
+
+
+def test_phase5_year_view_and_events_and_occasions(client):
+    year = client.get("/api/calendar/year", params={"year": 1405}).json()
+    assert len(year["months"]) == 12
+    assert year["day_count"] == 365
+    assert year["months"][11]["is_leap_month"] is False
+    assert sum(month["month_length"] for month in year["months"]) == year["day_count"]
+    assert year["holidays"] and all(item["source"] == "fixed_solar_holidays" for item in year["holidays"])
+
+    leap_year = client.get("/api/calendar/year", params={"year": 1408}).json()
+    assert leap_year["day_count"] == 366 and leap_year["months"][11]["is_leap_month"] is True
+
+    exam_date = "1405/07/12"
+    client.post(
+        "/api/exams",
+        json={"title": "آزمون تقویمی", "exam_type": "school", "date": exam_date, "start_time": "08:00"},
+    )
+    added = client.post(
+        "/api/calendar/occasions", json={"date": exam_date, "title": "مراسم مدرسه", "kind": "school"}
+    )
+    assert added.status_code == 200, added.text
+
+    day = client.get("/api/calendar/day", params={"date": exam_date}).json()
+    assert day["date"] == "۱۴۰۵/۰۷/۱۲"
+    assert day["jalali"] == {"year": 1405, "month": 7, "day": 12}
+    assert day["is_holiday"] is True, "مناسبت شخصی روز را علامت می‌زند"
+    assert any(event["kind"] == "exam" for event in day["events"])
+    assert "مراسم مدرسه" in day["holiday_titles"]
+    assert day["week"]["days"][0]["weekday"] == "شنبه"
+    assert len(day["week"]["days"]) == 7
+    assert all("iso" in row for row in day["week"]["days"])
+
+    month = client.get("/api/calendar/month", params={"year": 1405, "month": 7}).json()
+    tracked = [row for row in month["days"] if row["date"] == "۱۴۰۵/۰۷/۱۲"][0]
+    assert tracked["events_count"] if False else tracked["events"]
+    assert month["events_count"] >= 1

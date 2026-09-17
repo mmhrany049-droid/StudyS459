@@ -719,6 +719,27 @@ class ExamAttempt(Base, TimestampMixin):
     note = Column(Text)
 
 
+class CalendarOccasion(Base, TimestampMixin):
+    """A student-defined calendar entry (V3.1 doc 05 — «حداقل ساختار داده»).
+
+    Only fixed solar holidays ship as data; lunar occasions move every year, so the
+    student adds theirs here instead of the app guessing.
+    """
+
+    __tablename__ = "calendar_occasions"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    occurs_on = Column(Date, nullable=False)
+    jalali_year = Column(Integer, nullable=False)
+    title = Column(String(160), nullable=False)
+    kind = Column(String(24), default="personal")  # personal | religious | school | holiday
+    is_holiday = Column(Boolean, default=False)
+    note = Column(Text)
+
+    __table_args__ = (Index("ix_calendar_occasion_user_year", "user_id", "jalali_year"),)
+
+
 class CheckupCoverage(Base, TimestampMixin):
     """V3.1 doc 03: a checkup is a *coverage range*, never a single topic.
 

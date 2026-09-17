@@ -40,7 +40,13 @@ export function JalaliDateInput({
   }
 
   const days = Array.from({ length: monthLength(year, month) }, (_, index) => index + 1);
-  const years = Array.from({ length: 9 }, (_, index) => parsed.year - 1 + index);
+  // V3.1 doc 05: the picker must reach the supported window (۱۴۰۵–۱۴۰۸) without
+  // ever showing a Gregorian year; it stays a superset of it (selected year ±1).
+  const SUPPORTED = [1405, 1406, 1407, 1408];
+  const yearSet = new Set<number>([...SUPPORTED, parsed.year - 1, parsed.year, parsed.year + 1]);
+  const years = Array.from(yearSet)
+    .filter((item) => item >= 1400 && item <= 1420)
+    .sort((a, b) => a - b);
 
   return (
     <div>

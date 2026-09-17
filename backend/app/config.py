@@ -62,6 +62,7 @@ V2_C = "study_system_v2_docs/02_CALENDAR_JALALI_IRAN.md"
 V21 = "study_system_v2_1_docs"
 V22 = "study_system_v2_2_docs"
 V3 = "study_system_v3_docs/00_V3_MASTER_PRODUCTION_SPECIFICATION.md"
+V3_1 = "study_system_v3_1_docs/05_CALENDAR_1405_1408.md"
 
 
 PARAMS: Dict[str, Param] = {
@@ -70,6 +71,11 @@ PARAMS: Dict[str, Param] = {
     # ------------------------------------------------------------------
     "calendar.week_start": _p("شنبه", V2_C, USER_SPECIFIC, "Iranian week starts on Saturday"),
     "calendar.coins_timezone": _p("Asia/Tehran", V2_C, USER_SPECIFIC),
+    # V3.1 doc 05: the product must be usable for the whole ۱۴۰۵–۱۴۰۸ window
+    "calendar.min_year": _p(
+        1405, V3_1, USER_SPECIFIC, "پایین‌ترین سال پشتیبانی‌شده (بازهٔ V3.1: ۱۴۰۵ تا ۱۴۰۸)"
+    ),
+    "calendar.max_year": _p(1408, V3_1, USER_SPECIFIC, "بالاترین سال پشتیبانی‌شده (بازهٔ V3.1: ۱۴۰۵ تا ۱۴۰۸)"),
     "calendar.season.school_term_months": _p([7, 8, 9, 10, 11, 12, 1, 2, 3], V2_C, HEURISTIC),
     # ------------------------------------------------------------------
     # Rewards / coins (V2 owns these exact numbers)

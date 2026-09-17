@@ -17,7 +17,19 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
 from . import config
-from .api.routers import analytics, curriculum, exams, goals, imports, lab, planning, questions, system, testing
+from .api.routers import (
+    analytics,
+    calendar as calendar_router,
+    curriculum,
+    exams,
+    goals,
+    imports,
+    lab,
+    planning,
+    questions,
+    system,
+    testing,
+)
 from .core.errors import DomainError
 from .core.text import fa_text_deep
 from .db import models
@@ -81,6 +93,7 @@ for router in (
     goals.router,
     analytics.router,
     lab.router,
+    calendar_router.router,
 ):
     app.include_router(router, prefix="/api")
 

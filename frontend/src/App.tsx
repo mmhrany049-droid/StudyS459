@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { api } from "./lib/api";
 import { toPersianDigits } from "./lib/format";
+import Calendar from "./pages/Calendar";
 import Dashboard from "./pages/Dashboard";
 import Curriculum from "./pages/Curriculum";
 import QuestionBank from "./pages/QuestionBank";
@@ -19,6 +20,7 @@ import { Spinner } from "./components/ui";
 
 const NAV = [
   { to: "/", label: "امروز", icon: "◉" },
+  { to: "/calendar", label: "تقویم", icon: "▩" },
   { to: "/plan", label: "برنامه هفته", icon: "▦" },
   { to: "/curriculum", label: "مباحث و کتاب‌ها", icon: "▤" },
   { to: "/bank", label: "بانک تست", icon: "▥" },
@@ -106,6 +108,7 @@ export default function App() {
       <main className="mx-auto max-w-7xl px-4 py-6">
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/calendar" element={<Calendar />} />
           <Route path="/plan" element={<Planner />} />
           <Route path="/curriculum" element={<Curriculum />} />
           <Route path="/bank" element={<QuestionBank />} />
