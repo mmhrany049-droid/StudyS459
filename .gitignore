@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Local databases / runtime data
+backend/data/
+*.db
+*.db-journal
+*.sqlite3
+
+# Node / frontend build
+node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
