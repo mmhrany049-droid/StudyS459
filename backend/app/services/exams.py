@@ -581,7 +581,9 @@ def record_attempt(db: Session, user: models.User, exam_id: int, payload: dict) 
     percentage = common.to_float(payload.get("percentage"))
     if percentage is None and evaluable:
         percentage = round(100 * correct / evaluable, 2)
-    attempt_no = common.to_int(payload.get("attempt_no")) or (exam.attempt_no or 1)
+    # `attempt_no` counts the attempts *of this exam row*; the sitting ordinal of the
+    # exam itself (a retake is nوبت ۲) stays on `exam.attempt_no`.
+    attempt_no = common.to_int(payload.get("attempt_no")) or (_attempt_count(db, exam_id) + 1)
     summary = {
         "per_subject": per_subject,
         "correct": correct,

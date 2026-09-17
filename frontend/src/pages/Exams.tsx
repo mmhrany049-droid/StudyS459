@@ -20,9 +20,16 @@ export default function Exams() {
   const [bookId, setBookId] = useState<number | null>(null);
   const [tree, setTree] = useState<any>(null);
   const [prep, setPrep] = useState<any[]>([]);
+  const [center, setCenter] = useState<any>(null);
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [answerKeyText, setAnswerKeyText] = useState("");
+  const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
+  const [planFor, setPlanFor] = useState<number | null>(null);
+  const [plan, setPlan] = useState<any>(null);
   const [form, setForm] = useState({
     title: "",
     exam_type: "school",
+    source: "",
     date: todayJalali(),
     start_hour: "",
     start_minute: "00",
@@ -37,6 +44,16 @@ export default function Exams() {
     api.get<any>("/exams/calendar").then(setCalendar).catch(() => undefined);
     api.get<any>("/mocks/retake-list").then((payload) => setRetakes(payload.mocks ?? [])).catch(() => undefined);
     api.get<any>("/mocks/quiet-suggestions").then(setQuiet).catch(() => undefined);
+    api.get<any>("/exam-center").then(setCenter).catch(() => undefined);
+    api
+      .get<any>("/books")
+      .then(async (payload) => {
+        const ids = Array.from(
+          new Set((payload.books ?? []).map((book: any) => book.subject_id).filter(Boolean)),
+        ) as number[];
+        setSubjects(ids.map((id) => ({ id, title: `درس ${toPersianDigits(id)}` })));
+      })
+      .catch(() => undefined);
     api
       .get<any>("/exams/prep-suggestions")
       .then((payload) => setPrep(payload.suggestions ?? []))
@@ -89,17 +106,25 @@ export default function Exams() {
     setBusy(true);
     setError(null);
     try {
-      await api.post("/exams", {
+      const created = await api.post<any>("/exams", {
         title: form.title,
         exam_type: form.exam_type,
         date: form.date,
         start_time: form.start_hour ? `${form.start_hour.padStart(2, "0")}:${form.start_minute}` : undefined,
+        subjects: selectedSubjects,
+        question_count: form.total_questions ? Number(form.total_questions) : undefined,
         total_questions: form.total_questions ? Number(form.total_questions) : undefined,
         planned_duration_minutes: form.planned_duration_minutes ? Number(form.planned_duration_minutes) : undefined,
         keep_for_retake: form.keep_for_retake,
+        source: form.source || undefined,
       });
+      if (answerKeyText.trim()) {
+        await api.put(`/exams/${created.id}/answer-key`, { answer_key: answerKeyText });
+      }
       setNotice("امتحان ثبت شد؛ حالا در اولویت‌بندی و برنامه هفته اثر می‌گذارد.");
-      setForm({ ...form, title: "", total_questions: "", planned_duration_minutes: "" });
+      setForm({ ...form, title: "", total_questions: "", planned_duration_minutes: "", source: "" });
+      setAnswerKeyText("");
+      setSelectedSubjects([]);
       load();
     } catch (err: any) {
       setError(err.message);
@@ -108,11 +133,108 @@ export default function Exams() {
     }
   }
 
+  async function openPlan(examId: number) {
+    if (planFor === examId) {
+      setPlanFor(null);
+      return;
+    }
+    setPlanFor(examId);
+    setPlan(null);
+    const data = await api.get<any>(`/exams/${examId}/prep-plan`);
+    setPlan(data);
+  }
+
   if (error && exams.length === 0) return <ErrorBox message={error} onRetry={load} />;
 
   return (
     <div className="grid gap-5 lg:grid-cols-3">
       <div className="lg:col-span-2 grid gap-5">
+        {center && (
+          <Card title="مرکز آزمون" action={<span className="muted">گذشته {toPersianDigits(center.counts?.past ?? 0)} · آینده {toPersianDigits(center.counts?.upcoming ?? 0)}</span>}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <div className="mb-2 text-xs font-semibold text-ink-800">آزمون‌های گذشته — نتیجه و پیگیری</div>
+                {(center.past ?? []).length === 0 && <p className="muted">هنوز آزمون برگزارشده‌ای ثبت نشده است.</p>}
+                <ul className="grid gap-2 text-xs">
+                  {(center.past ?? []).slice(0, 4).map((exam: any) => (
+                    <li key={exam.id} className="rounded-xl bg-ink-50 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-ink-800">{exam.title}</span>
+                        <Badge tone={exam.result?.last_percentage === null ? "muted" : "ok"}>
+                          {exam.result?.last_percentage === null || exam.result?.last_percentage === undefined
+                            ? "بدون نتیجه"
+                            : `درصد ${toPersianDigits(Math.round(exam.result.last_percentage))}`}
+                        </Badge>
+                      </div>
+                      <div className="muted mt-1">
+                        {exam.type_label} · {exam.date} · {toPersianDigits(exam.result?.attempts ?? 0)} تلاش
+                      </div>
+                      {(exam.weaknesses ?? []).length > 0 && (
+                        <div className="mt-1">
+                          ضعیف‌ها: {(exam.weaknesses ?? []).map((item: any) => item.topic_title).join("، ")}
+                        </div>
+                      )}
+                      {(exam.follow_up ?? []).slice(0, 2).map((item: any, index: number) => (
+                        <div key={index} className="muted mt-1">
+                          پیگیری: {item.topic_title ?? "همین آزمون"} — {item.why}
+                        </div>
+                      ))}
+                      {exam.retake_available && (
+                        <div className="mt-1 text-brand-700">
+                          برای تمرین مجدد نگه داشته شده؛ تکرار، تاریخچه را پاک نمی‌کند.
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <div className="mb-2 text-xs font-semibold text-ink-800">آزمون‌های آینده — آماده‌سازی</div>
+                {(center.upcoming ?? []).length === 0 && <p className="muted">آزمون آینده‌ای ثبت نشده است.</p>}
+                <ul className="grid gap-2 text-xs">
+                  {(center.upcoming ?? []).slice(0, 4).map((exam: any) => (
+                    <li key={exam.id} className="rounded-xl bg-ink-50 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-ink-800">{exam.title}</span>
+                        <Badge tone={exam.days_left <= 7 ? "warn" : "muted"}>{toPersianDigits(exam.days_left)} روز</Badge>
+                      </div>
+                      <div className="muted mt-1">
+                        {exam.type_label} · {exam.date_long} · {toPersianDigits(exam.prep?.topics_marked ?? 0)} مبحث علامت‌خورده
+                      </div>
+                      <div className="mt-1">
+                        آمادگی تخمینی:{" "}
+                        {exam.prep?.readiness?.value === null || exam.prep?.readiness?.value === undefined
+                          ? "بدون داده"
+                          : toPersianDigits(Math.round(exam.prep.readiness.value * 100)) + "٪"}
+                        <span className="muted"> — {exam.prep?.readiness?.evidence}</span>
+                      </div>
+                      {exam.prep?.next_action && <div className="muted mt-1">قدم بعدی: {exam.prep.next_action.text}</div>}
+                      <button className="btn-ghost btn-xs mt-2" onClick={() => openPlan(exam.id)}>
+                        {planFor === exam.id ? "بستن برنامه" : "برنامه آماده‌سازی چندروزه"}
+                      </button>
+                      {planFor === exam.id && plan && (
+                        <div className="mt-2 grid gap-1 border-t border-ink-100 pt-2">
+                          {plan.days.map((day: any) => (
+                            <div key={day.date} className="flex items-start justify-between gap-2">
+                              <span className="muted">{day.weekday} {day.date}</span>
+                              <span className="flex-1">
+                                {(day.topics ?? []).map((topic: any) => topic.topic_title).join("، ") || "مرور فهرست‌وار"}
+                              </span>
+                              <span className="muted">{toPersianDigits(day.suggested_minutes)}′</span>
+                            </div>
+                          ))}
+                          <div className="muted">{plan.policy}</div>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <p className="muted mt-3">{center.policy}</p>
+          </Card>
+        )}
+
         <Card title="امتحان‌های پیش‌رو" action={<span className="muted">{calendar ? `${calendar.from} تا ${calendar.to}` : ""}</span>}>
           {exams.length === 0 ? (
             <Empty
@@ -330,12 +452,69 @@ export default function Exams() {
             <div>
               <label className="label">نوع</label>
               <select className="input" value={form.exam_type} onChange={(e) => setForm({ ...form, exam_type: e.target.value })}>
-                <option value="school">امتحان مدرسه</option>
-                <option value="mock">آزمون آزمایشی</option>
-                <option value="quiz">آزمون کلاسی</option>
+                {(center?.types ?? [
+                  { value: "personal", label: "آزمون شخصی" },
+                  { value: "school", label: "آزمون مدرسه" },
+                  { value: "mock", label: "آزمون آزمایشی" },
+                  { value: "checkup", label: "چکاپ" },
+                  { value: "comprehensive", label: "جامع" },
+                ]).map((option: any) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
+              <p className="muted mt-1">
+                {(center?.types ?? []).find((option: any) => option.value === form.exam_type)?.hint ?? ""}
+              </p>
+              {(form.exam_type === "mock" || form.exam_type === "comprehensive") && (
+                <div className="mt-2">
+                  <label className="label">درس‌ها (چنددرس)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {(subjects.length ? subjects : [{ id: 1, title: "درس ۱" }, { id: 2, title: "درس ۲" }, { id: 3, title: "درس ۳" }]).map(
+                      (subject: any) => {
+                        const checked = selectedSubjects.includes(subject.id);
+                        return (
+                          <button
+                            key={subject.id}
+                            className={checked ? "btn-primary btn-xs" : "btn-ghost btn-xs"}
+                            onClick={() =>
+                              setSelectedSubjects(
+                                checked
+                                  ? selectedSubjects.filter((id) => id !== subject.id)
+                                  : [...selectedSubjects, subject.id],
+                              )
+                            }
+                          >
+                            {subject.title}
+                          </button>
+                        );
+                      },
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <JalaliDateInput value={form.date} onChange={(value) => setForm({ ...form, date: value })} label="تاریخ (شمسی)" required />
+            <div>
+              <label className="label">منبع (اختیاری)</label>
+              <input
+                className="input"
+                value={form.source}
+                onChange={(event) => setForm({ ...form, source: event.target.value })}
+                placeholder="مدرسه، کانون، خودم…"
+              />
+            </div>
+            <div>
+              <label className="label">کلید آزمون (اختیاری)</label>
+              <input
+                className="input"
+                value={answerKeyText}
+                onChange={(event) => setAnswerKeyText(event.target.value)}
+                placeholder="مثلاً 1:2,2:3,3:1 — خالی یعنی بدون کلید"
+              />
+              <p className="muted mt-1">کلید آزمون از برگهٔ پاسخ جداست و می‌تواند بعداً هم وارد شود.</p>
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="label">ساعت شروع (اختیاری)</label>
