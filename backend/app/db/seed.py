@@ -516,12 +516,22 @@ def seed_research(db: Session) -> int:
     return created
 
 
+def seed_checkup_coverages(db: Session) -> dict:
+    """Chemistry checkups as coverage ranges (V3.1 doc 03) — additive and idempotent."""
+    from ..services import checkups
+
+    result = checkups.ensure_coverage_seeded(db)
+    db.flush()
+    return result
+
+
 def seed_all(db: Session, user: Optional[models.User] = None, content_root: Optional[str] = None) -> dict:
     result = {
         "books": seed_books(db, content_root),
         "badges": seed_badges(db),
         "onboarding_questions": seed_onboarding_questions(db),
         "research": seed_research(db),
+        "checkup_coverages": seed_checkup_coverages(db),
         "default_classes": 0,
     }
     if user is not None:

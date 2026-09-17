@@ -286,6 +286,10 @@ class TestSession(Base, TimestampMixin):
     time_limit_seconds = Column(Integer)
     auto_time_adjusted = Column(Boolean, default=False)
 
+    # V3.1: a checkup/comprehensive session covers a *range* of topics, not one topic
+    coverage_id = Column(Integer, ForeignKey("checkup_coverages.id"))
+    coverage_topic_ids = Column(SafeJSON, default=list)
+
     sequence_from = Column(Integer)
     sequence_to = Column(Integer)
     parity = Column(String(8), default="any")  # odd | even | any
@@ -729,6 +733,7 @@ class CheckupCoverage(Base, TimestampMixin):
     user_id = Column(Integer, ForeignKey("users.id"))
     book_id = Column(Integer, ForeignKey("books.id"), nullable=False)
     chapter_topic_id = Column(Integer, ForeignKey("topics.id"))
+    chapter_title = Column(String(200))
     kind = Column(String(16), default="checkup")          # checkup | comprehensive
     label = Column(String(160), nullable=False)
     order_index = Column(Integer, default=0)
@@ -741,7 +746,8 @@ class CheckupCoverage(Base, TimestampMixin):
     source_file = Column(String(200))
     exam_id = Column(Integer, ForeignKey("exams.id"))
 
-    __table_args__ = (UniqueConstraint("book_id", "label", name="uq_checkup_book_label"),)
+    # «آزمون چکاپ اول» repeats in every chapter, so identity is the file order
+    __table_args__ = (UniqueConstraint("book_id", "order_index", name="uq_checkup_book_order"),)
 
 
 class Goal(Base, TimestampMixin):

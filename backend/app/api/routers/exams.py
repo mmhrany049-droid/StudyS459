@@ -15,7 +15,7 @@ from ...core.timeutil import today_local, week_end, week_start
 from ...db import models
 from ... import config
 from ...db.base import get_db
-from ...services import common, exams as exams_service, recommendation
+from ...services import checkups as checkups_service, common, exams as exams_service, recommendation
 from ..deps import current_user, parse_day
 
 router = APIRouter(tags=["exams"])
@@ -80,6 +80,60 @@ class AnswerKeyPayload(BaseModel):
     key: Optional[dict | str] = None
     mode: str = "replace"  # replace | merge
     source: Optional[str] = "manual"
+
+
+class CoverageSessionPayload(BaseModel):
+    count: Optional[int] = 20
+    parity: str = "any"
+
+
+class CoverageExamPayload(BaseModel):
+    title: Optional[str] = None
+    date: Optional[str] = None
+    question_count: Optional[int] = None
+
+
+@router.get("/exam-checkups")
+def list_exam_checkups(
+    book_id: Optional[int] = None, user: models.User = Depends(current_user), db: Session = Depends(get_db)
+) -> dict:
+    """Checkup coverage ranges of the chemistry book (V3.1 doc 03)."""
+    result = checkups_service.list_coverages(db, user, book_id=book_id)
+    db.commit()
+    return result
+
+
+@router.get("/exam-checkups/{coverage_id}")
+def exam_checkup_detail(
+    coverage_id: int, user: models.User = Depends(current_user), db: Session = Depends(get_db)
+) -> dict:
+    result = checkups_service.coverage_progress(db, user, coverage_id)
+    db.commit()
+    return result
+
+
+@router.post("/exam-checkups/{coverage_id}/session")
+def exam_checkup_session(
+    coverage_id: int,
+    payload: CoverageSessionPayload,
+    user: models.User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    result = checkups_service.build_coverage_session(db, user, coverage_id, payload.model_dump())
+    db.commit()
+    return result
+
+
+@router.post("/exam-checkups/{coverage_id}/exam")
+def exam_checkup_exam(
+    coverage_id: int,
+    payload: CoverageExamPayload,
+    user: models.User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    result = checkups_service.link_exam(db, user, coverage_id, payload.model_dump())
+    db.commit()
+    return result
 
 
 @router.get("/exam-center")

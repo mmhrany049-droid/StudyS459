@@ -26,6 +26,9 @@ export default function Exams() {
   const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
   const [planFor, setPlanFor] = useState<number | null>(null);
   const [plan, setPlan] = useState<any>(null);
+  const [checkups, setCheckups] = useState<any>(null);
+  const [openCheckup, setOpenCheckup] = useState<number | null>(null);
+  const [checkupDetail, setCheckupDetail] = useState<any>(null);
   const [form, setForm] = useState({
     title: "",
     exam_type: "school",
@@ -45,6 +48,7 @@ export default function Exams() {
     api.get<any>("/mocks/retake-list").then((payload) => setRetakes(payload.mocks ?? [])).catch(() => undefined);
     api.get<any>("/mocks/quiet-suggestions").then(setQuiet).catch(() => undefined);
     api.get<any>("/exam-center").then(setCenter).catch(() => undefined);
+    api.get<any>("/exam-checkups").then(setCheckups).catch(() => undefined);
     api
       .get<any>("/books")
       .then(async (payload) => {
@@ -131,6 +135,25 @@ export default function Exams() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function toggleCheckup(coverageId: number) {
+    if (openCheckup === coverageId) {
+      setOpenCheckup(null);
+      return;
+    }
+    setOpenCheckup(coverageId);
+    setCheckupDetail(null);
+    const data = await api.get<any>(`/exam-checkups/${coverageId}`);
+    setCheckupDetail(data);
+  }
+
+  async function buildCheckupSession(coverageId: number) {
+    const result = await api.post<any>(`/exam-checkups/${coverageId}/session`, { count: 20 });
+    setNotice(
+      `جلسهٔ چکاپ ساخته شد: ${toPersianDigits(result.questions)} سؤال از ${toPersianDigits(result.topics_with_questions)} مبحث.`,
+    );
+    load();
   }
 
   async function openPlan(examId: number) {
@@ -376,6 +399,53 @@ export default function Exams() {
             </ul>
           )}
         </Card>
+
+        {checkups && (checkups.checkups ?? []).length > 0 && (
+          <Card title="چکاپ‌های کتاب (بازهٔ پوشش)" action={<span className="muted">{toPersianDigits(checkups.counts?.ranges ?? 0)} بازه</span>}>
+            <p className="muted mb-2">
+              چکاپ یک مبحث تکی نیست؛ از بعد از چکاپ قبلی تا قبل از این چکاپ را می‌سنجد.
+            </p>
+            <ul className="grid gap-2 text-xs">
+              {(checkups.checkups ?? []).slice(0, 8).map((item: any) => (
+                <li key={item.id} className="rounded-xl bg-ink-50 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-ink-800">
+                      {item.label}
+                      {item.chapter_title ? ` — ${item.chapter_title}` : ""}
+                    </span>
+                    <Badge tone={item.is_range ? "ok" : "warn"}>{toPersianDigits(item.topic_count)} مبحث</Badge>
+                  </div>
+                  <div className="muted mt-1">
+                    از «{item.covered_from}» تا «{item.covered_to}» · بانک تست:{" "}
+                    {toPersianDigits(item.question_bank?.questions ?? 0)} سؤال
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button className="btn-ghost btn-xs" onClick={() => toggleCheckup(item.id)}>
+                      {openCheckup === item.id ? "بستن" : "مباحث بازه"}
+                    </button>
+                    <button className="btn-primary btn-xs" onClick={() => buildCheckupSession(item.id)}>
+                      جلسهٔ چکاپ روی بازه
+                    </button>
+                  </div>
+                  {openCheckup === item.id && checkupDetail && (
+                    <div className="mt-2 grid gap-1 border-t border-ink-100 pt-2">
+                      {(checkupDetail.topics ?? []).map((topic: any) => (
+                        <div key={topic.topic_id} className="flex items-center justify-between">
+                          <span>{topic.title}</span>
+                          <span className="muted">
+                            {topic.coverage === null ? "بدون داده" : `${toPersianDigits(Math.round(topic.coverage * 100))}٪`} — {topic.evidence}
+                          </span>
+                        </div>
+                      ))}
+                      <div className="muted">{checkupDetail.next_step}</div>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {checkups.single_topic_warning && <p className="mt-2 text-xs text-warn-600">{checkups.single_topic_warning}</p>}
+          </Card>
+        )}
 
         {prep.length > 0 && (
           <Card title="آمادگی امتحان‌های پیش‌رو">

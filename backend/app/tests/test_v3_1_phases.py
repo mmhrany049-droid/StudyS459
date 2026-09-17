@@ -295,3 +295,80 @@ def _flatten(nodes):
     for node in nodes:
         yield node
         yield from _flatten(node.get("children") or [])
+
+
+# ---------------------------------------------------------------------------
+# Phase 3 — chemistry checkup as a coverage range
+# ---------------------------------------------------------------------------
+
+
+def test_phase3_checkup_coverages_are_ranges(client):
+    payload = client.get("/api/exam-checkups").json()
+    assert payload["counts"]["total"] >= 10, payload["counts"]
+    assert payload["counts"]["ranges"] >= 10, "چکاپ باید بازهٔ چندمبحثی باشد"
+    assert payload["single_topic_warning"] in (None, "") or payload["counts"]["single_topic"] >= 1
+
+    ranges = [row for row in payload["checkups"] if row["is_range"]]
+    first = ranges[0]
+    assert first["topic_count"] >= 2
+    assert len(first["included_topic_titles"]) == first["topic_count"]
+    assert first["start_after_topic"] and first["end_before_topic"]
+    assert first["note"].startswith("چکاپ یک بازهٔ پوشش")
+
+    chained = [row for row in ranges if row["previous_checkup_id"]]
+    assert chained, "چکاپ‌ها باید به چکاپ قبلی زنجیر شوند"
+    assert chained[0]["start_after_topic"] == ranges[0]["label"]
+
+    comprehensive = [row for row in payload["checkups"] if row["kind"] == "comprehensive"]
+    assert comprehensive and all(row["scope"] == "chapter" for row in comprehensive)
+    assert comprehensive[0]["topic_count"] >= 10, "آزمون جامع، کل فصل را پوشش می‌دهد"
+
+
+def test_phase3_coverage_session_spans_multiple_topics(client):
+    ranges = [row for row in client.get("/api/exam-checkups").json()["checkups"] if row["is_range"]]
+    coverage = ranges[0]
+
+    # a bank (with answer keys) for the first few topics of the segment
+    for topic_id in coverage["included_topic_ids"][:3]:
+        added = client.post(
+            f"/api/books/{coverage['book_id']}/nodes/{topic_id}/questions/range",
+            json={"from_sequence": 1, "to_sequence": 4},
+        )
+        assert added.status_code == 200, added.text
+        keyed = client.put(
+            f"/api/books/{coverage['book_id']}/nodes/{topic_id}/answer-key",
+            json={"items": [{"sequence_no": seq, "answer_key": str((seq % 4) + 1)} for seq in range(1, 5)]},
+        )
+        assert keyed.status_code == 200, keyed.text
+
+    built = client.post(f"/api/exam-checkups/{coverage['id']}/session", json={"count": 12})
+    assert built.status_code == 200, built.text
+    body = built.json()
+    assert body["topic_count"] == coverage["topic_count"]
+    assert body["questions"] >= 3
+    assert body["planned_duration_low"] > 0 and body["planned_duration_high"] >= body["planned_duration_low"]
+
+    sessions = client.get("/api/test-sessions").json()["sessions"]
+    session = [row for row in sessions if row["id"] == body["session_id"]][0]
+    assert session["session_type"] == "checkup"
+    detail = client.get(f"/api/test-sessions/{body['session_id']}").json()
+    assert len(detail["questions"]) == body["questions"]
+    # the session really spans the segment: its questions come from more than one topic
+    from app.db import models as db_models
+
+    session_row = client.app_state if False else None
+    topics_in_session = client.get(f"/api/test-sessions/{body['session_id']}/review").json() if False else None
+    assert body["topics_with_questions"] >= 2, "جلسهٔ چکاپ باید بیش از یک مبحث را بسنجد"
+
+    exam = client.post(f"/api/exam-checkups/{coverage['id']}/exam", json={"date": "1405/09/01"})
+    assert exam.status_code == 200, exam.text
+    assert exam.json()["topics_marked"] == coverage["topic_count"]
+    created = client.get(f"/api/exams/{exam.json()['exam_id']}").json()
+    assert created["exam_type"] == "checkup"
+    assert created["coverage_range"]["checkup_id"] == coverage["id"]
+    assert len(created["coverage_range"]["included_topic_ids"]) == coverage["topic_count"]
+
+    progress = client.get(f"/api/exam-checkups/{coverage['id']}").json()
+    assert progress["is_range"] is True
+    assert progress["next_step"]
+    assert progress["sessions"] >= 1
