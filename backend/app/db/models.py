@@ -640,9 +640,17 @@ class Exam(Base, TimestampMixin):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    exam_type = Column(String(16), default="school")  # school | mock
+    exam_type = Column(String(16), default="school")  # personal|school|mock|checkup|comprehensive
     title = Column(String(200), nullable=False)
     subject_id = Column(Integer, ForeignKey("subjects.id"))  # null for multi-subject mock
+    # V3.1: a mock/comprehensive exam can span several subjects; `subject_id` stays
+    # as the primary (backward compatible) subject.
+    subjects = Column(SafeJSON, default=list)      # [subject_id, ...]
+    source = Column(String(120))                    # «مدرسه»، «کانون»، «خودم»
+    question_count = Column(Integer)                # V3.1 name for the planned count
+    answer_key = Column(SafeJSON, default=dict)     # {sequence: 1..4}
+    answer_key_source = Column(String(24))          # manual | imported | scanned
+    coverage_range = Column(SafeJSON, default=dict)  # checkup: {included_topics, from, to}
     provider = Column(String(120))
     exam_date = Column(Date, nullable=False)
     start_time = Column(Time)
@@ -701,7 +709,39 @@ class ExamAttempt(Base, TimestampMixin):
     correct_count = Column(Integer)
     wrong_count = Column(Integer)
     unanswered_count = Column(Integer)
+    question_count = Column(Integer)
+    # per-subject / per-part result summary + the follow-up the attempt produced
+    summary = Column(SafeJSON, default=dict)
     note = Column(Text)
+
+
+class CheckupCoverage(Base, TimestampMixin):
+    """V3.1 doc 03: a checkup is a *coverage range*, never a single topic.
+
+    Seeded from the chemistry table of contents («• آزمون چکاپ اول …») and used by
+    the testing engine to build a session over ``included_topic_ids`` — the segment
+    from the previous checkup up to this one.
+    """
+
+    __tablename__ = "checkup_coverages"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    book_id = Column(Integer, ForeignKey("books.id"), nullable=False)
+    chapter_topic_id = Column(Integer, ForeignKey("topics.id"))
+    kind = Column(String(16), default="checkup")          # checkup | comprehensive
+    label = Column(String(160), nullable=False)
+    order_index = Column(Integer, default=0)
+    scope = Column(String(16), default="segment")         # segment | chapter
+    covered_from = Column(String(200))
+    covered_to = Column(String(200))
+    included_topic_ids = Column(SafeJSON, default=list)
+    included_topic_titles = Column(SafeJSON, default=list)
+    previous_checkup_id = Column(Integer, ForeignKey("checkup_coverages.id"))
+    source_file = Column(String(200))
+    exam_id = Column(Integer, ForeignKey("exams.id"))
+
+    __table_args__ = (UniqueConstraint("book_id", "label", name="uq_checkup_book_label"),)
 
 
 class Goal(Base, TimestampMixin):

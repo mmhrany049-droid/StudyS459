@@ -35,6 +35,24 @@ class ParsedNode:
 
 
 @dataclass
+class ParsedMarker:
+    """A «آزمون چکاپ» / «آزمون جامع» line of the chemistry table of contents.
+
+    V3.1 (doc 03) treats a checkup as a *coverage range*, not a single topic:
+    «included_topics[] از سگمنت قبلی تا قبل چکاپ فعلی».
+    """
+
+    kind: str                  # checkup | comprehensive
+    label: str                 # «آزمون چکاپ اول»
+    chapter_title: Optional[str]
+    index_in_chapter: int
+    included_topics: List[str] = field(default_factory=list)
+    covered_from: Optional[str] = None   # first topic of the segment
+    covered_to: Optional[str] = None     # last topic before the marker
+    scope: str = "segment"               # segment | chapter
+
+
+@dataclass
 class ParsedBook:
     stable_key: str
     title: str
@@ -48,6 +66,7 @@ class ParsedBook:
     hierarchy_note: Optional[str] = None
     levels: int = 1  # number of difficulty levels per topic (حسابان = 3)
     level_labels: List[str] = field(default_factory=list)
+    markers: List[ParsedMarker] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -58,6 +77,14 @@ _CHAPTER_RE = re.compile(r"^فصل\s*(?:[۰-۹0-9]+|اول|دوم|سوم|چها�
 _LESSON_RE = re.compile(r"^درس\s+(?:اول|دوم|سوم|چهارم|پنجم|ششم|هفتم|هشتم|نهم|دهم|[\d۰-۹]+)\s*(?:و\s*درس\s*\w+)?\s*[:：]?\s*(.*)$")
 _SECTION_RE = re.compile(r"^بخش\s+(?:اول|دوم|سوم|چهارم|پنجم|ششم|هفتم|هشتم|نهم|دهم|یازدهم|دوازدهم|[\d۰-۹]+)\s*[:：]\s*(.*)$")
 _PHYSICS_SECTION_RE = re.compile(r"^بخش\s*[۰-۹0-9]+\s*[:：]\s*(.+)$")
+# V3.1 chemistry TOC: «فصل ۱ ـ قدر هدایای زمینی را بدانیم» / «1. الگوها و روندها در رفتار مواد»
+# / «زیرعنوان ۲-۱: جدول دوره‌ای ...» / «• آزمون چکاپ اول»
+_CHEM_CHAPTER_RE = re.compile(r"^فصل\s*(?:[۰-۹0-9]+|[\u0600-\u06FF]+)?\s*(?:[ـ\-–—:：]\s*(.*))?$")
+_CHEM_NUMBERED_RE = re.compile(r"^([۰-۹0-9]+)\s*[.\-)]\s*(.+)$")
+_CHEM_SUBTOPIC_RE = re.compile(r"^زیرعنوان\s*[۰-۹0-9\-–]+\s*[:：]\s*(.+)$")
+_CHEM_MARKER_RE = re.compile(r"^[•\-*\u25CF\u25CB]\s*آزمون\s+(چکاپ|جامع|جمع‌بندی)\s*(.*)$")
+_SEPARATOR_RE = re.compile(r"^=+\s*$")
+_CHEM_TITLE_HINT = re.compile(r"(فهرست|مبتکران)\s*$")
 
 
 def _clean(text: str) -> str:
@@ -153,6 +180,13 @@ def parse_calculus(path: str) -> Optional[ParsedBook]:
 # ---------------------------------------------------------------------------
 
 def parse_chemistry(path: str) -> Optional[ParsedBook]:
+    """Chemistry TOC → chapter > topic > زیرعنوان, plus the checkup/comprehensive markers.
+
+    V3.1 rewrote this parser: the refreshed table of contents uses
+    «فصل ۱ ـ ...», numbered topics («1. ...»), «زیرعنوان ۲-۱: ...» and
+    «• آزمون چکاپ اول» markers. The legacy bullet format is still accepted, so an
+    older file keeps producing the same tree (nothing is lost in the upgrade).
+    """
     raw = _read(path)
     if raw is None:
         return None
@@ -168,29 +202,102 @@ def parse_chemistry(path: str) -> Optional[ParsedBook]:
     )
     chapter: Optional[ParsedNode] = None
     last_topic: Optional[ParsedNode] = None
-    for raw_line in raw.splitlines():
-        line = raw_line.rstrip()
-        if not line.strip():
-            continue
-        stripped = line.strip()
-        if stripped.startswith("کتاب:") or stripped.startswith("پایان کل کتاب"):
-            continue
-        chapter_match = _CHAPTER_RE.match(stripped) if not line.startswith(" ") else None
-        if chapter_match:
-            chapter = ParsedNode(_clean(chapter_match.group(1)), "chapter")
-            book.chapters.append(chapter)
-            last_topic = None
-            continue
+    chapter_topics: List[str] = []
+    segment_topics: List[str] = []
+    marker_index = 0
+
+    def close_marker(kind: str, label: str, scope: str) -> None:
+        nonlocal marker_index, segment_topics
         if chapter is None:
+            return
+        if kind == "checkup":
+            included = list(segment_topics)
+        else:  # جامع: covers the whole chapter so far
+            included = list(chapter_topics)
+            scope = "chapter"
+        marker_index += 1
+        book.markers.append(
+            ParsedMarker(
+                kind=kind,
+                label=label,
+                chapter_title=chapter.title,
+                index_in_chapter=marker_index,
+                included_topics=included,
+                covered_from=included[0] if included else None,
+                covered_to=included[-1] if included else None,
+                scope=scope,
+            )
+        )
+        segment_topics = []
+
+    blocks = re.split(_SEPARATOR_RE, raw)
+    for block in blocks:
+        lines = [line for line in block.splitlines() if line.strip()]
+        if not lines:
             continue
-        indent, content = _strip_bullet(line)
-        if not content:
+        # title block: either the header («فهرست ...») or a lone book title
+        if len(lines) == 1 and _CHEM_TITLE_HINT.search(lines[0].strip()):
             continue
-        if indent >= 2 and last_topic is not None and line.startswith(" "):
-            last_topic.add(ParsedNode(content, "subsection"))
-        else:
-            last_topic = ParsedNode(content, "section")
-            chapter.add(last_topic)
+        if lines[0].strip().startswith("فهرست") and len(lines) == 1:
+            continue
+        for raw_line in block.splitlines():
+            line = raw_line.rstrip()
+            stripped = line.strip()
+            if not stripped or _SEPARATOR_RE.match(stripped):
+                continue
+            if stripped.startswith("کتاب:") or stripped.startswith("پایان کل کتاب"):
+                continue
+            if _CHEM_TITLE_HINT.search(stripped) and len(stripped) < 40 and not re.search(r"[۰-۹0-9]", stripped):
+                continue
+
+            marker_match = _CHEM_MARKER_RE.match(stripped)
+            if marker_match:
+                close_marker(
+                    "checkup" if marker_match.group(1) == "چکاپ" else "comprehensive",
+                    f"آزمون {marker_match.group(1)} {marker_match.group(2)}".strip(),
+                    "segment",
+                )
+                continue
+
+            chapter_match = _CHEM_CHAPTER_RE.match(stripped) if not line.startswith(" ") else None
+            if chapter_match and _clean(chapter_match.group(1) or ""):
+                title = _clean(chapter_match.group(1))
+                # «فصل ۱ ـ قدر هدایای زمینی را بدانیم» → the sentence after the dash
+                chapter = ParsedNode(title, "chapter")
+                book.chapters.append(chapter)
+                last_topic = None
+                chapter_topics = []
+                segment_topics = []
+                marker_index = 0
+                continue
+            if chapter is None:
+                continue
+
+            subtopic_match = _CHEM_SUBTOPIC_RE.match(stripped)
+            if subtopic_match and last_topic is not None:
+                last_topic.add(ParsedNode(_clean(subtopic_match.group(1)), "subsection"))
+                continue
+
+            numbered_match = _CHEM_NUMBERED_RE.match(stripped) if not line.startswith(" ") else None
+            if numbered_match:
+                title = _clean(numbered_match.group(2))
+                last_topic = ParsedNode(title, "section")
+                chapter.add(last_topic)
+                chapter_topics.append(title)
+                segment_topics.append(title)
+                continue
+
+            # legacy layout: indented bullets are subtopics, top-level bullets are topics
+            indent, content = _strip_bullet(line)
+            if not content:
+                continue
+            if indent >= 2 and last_topic is not None:
+                last_topic.add(ParsedNode(content, "subsection"))
+            else:
+                last_topic = ParsedNode(content, "section")
+                chapter.add(last_topic)
+                chapter_topics.append(content)
+                segment_topics.append(content)
     return book
 
 

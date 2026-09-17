@@ -61,6 +61,20 @@ class SessionType(str, Enum):
     DIAGNOSTIC = "diagnostic"
     MOCK = "mock"
     IMPORTED = "imported"
+    CHECKUP = "checkup"              # coverage-range session (V3.1 doc 03)
+    COMPREHENSIVE = "comprehensive"  # multi-chapter closure session
+
+
+SESSION_TYPE_LABELS_FA = {
+    SessionType.PRACTICE.value: "تمرین",
+    SessionType.REVIEW.value: "مرور",
+    SessionType.TIMED_QUIZ.value: "آزمون زمان‌دار",
+    SessionType.DIAGNOSTIC.value: "تشخیصی",
+    SessionType.MOCK.value: "آزمون آزمایشی",
+    SessionType.IMPORTED.value: "ورود گذشته",
+    SessionType.CHECKUP.value: "چکاپ",
+    SessionType.COMPREHENSIVE.value: "جامع",
+}
 
 
 class SessionStatus(str, Enum):
@@ -183,8 +197,34 @@ class SchedulingType(str, Enum):
 
 
 class ExamType(str, Enum):
+    """V3.1 (doc 03): one unified exam model, five types.
+
+    ``school`` and ``mock`` keep their V3 meaning so existing rows stay valid;
+    ``personal``, ``checkup`` and ``comprehensive`` are additive.
+    """
+
+    PERSONAL = "personal"
     SCHOOL = "school"
     MOCK = "mock"
+    CHECKUP = "checkup"
+    COMPREHENSIVE = "comprehensive"
+
+
+EXAM_TYPE_LABELS_FA = {
+    ExamType.PERSONAL.value: "آزمون شخصی",
+    ExamType.SCHOOL.value: "آزمون مدرسه",
+    ExamType.MOCK.value: "آزمون آزمایشی",
+    ExamType.CHECKUP.value: "چکاپ",
+    ExamType.COMPREHENSIVE.value: "جامع",
+}
+
+EXAM_TYPE_HINTS_FA = {
+    ExamType.PERSONAL.value: "خودت سؤال می‌گذاری و خودت تصحیح می‌کنی.",
+    ExamType.SCHOOL.value: "آزمون رسمی مدرسه با تاریخ مشخص.",
+    ExamType.MOCK.value: "آزمون آزمایشی؛ می‌تواند چند درس داشته باشد و برای نوبت بعد نگه داشته شود.",
+    ExamType.CHECKUP.value: "پوشش چند مبحث پیوسته (از چکاپ قبلی تا این چکاپ)؛ آزمون یک مبحث تکی نیست.",
+    ExamType.COMPREHENSIVE.value: "پوشش چند فصل/کتاب به‌عنوان جمع‌بندی.",
+}
 
 
 class ExamStatus(str, Enum):

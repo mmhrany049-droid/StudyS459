@@ -134,11 +134,15 @@ def get_db() -> Iterator[Session]:
 
 def init_db(drop: bool = False) -> None:
     from . import models  # noqa: F401  (registers metadata)
+    from .migrations import sync_schema
 
     engine = get_engine()
     if drop:
         Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
+    if not drop:
+        # additive only: keeps a V3 database usable after the V3.1 upgrade
+        sync_schema(engine)
 
 
 def reset_engine() -> None:

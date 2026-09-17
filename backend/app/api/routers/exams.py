@@ -26,6 +26,12 @@ class ExamPayload(BaseModel):
     title: str
     subject_id: Optional[int] = None
     provider: Optional[str] = None
+    source: Optional[str] = None
+    subjects: list[int] = []
+    question_count: Optional[int] = None
+    answer_key: dict | str = {}
+    answer_key_source: Optional[str] = None
+    coverage_range: dict = {}
     exam_date: Optional[str] = None
     date: Optional[str] = None  # UI convenience alias for exam_date
     start_time: Optional[str] = None
@@ -64,7 +70,68 @@ class AttemptPayload(BaseModel):
     unanswered_count: Optional[int] = None
     percentage: Optional[float] = None
     attempt_no: Optional[int] = None
+    question_count: Optional[int] = None
+    duration_spent: Optional[int] = None
     note: Optional[str] = None
+
+
+class AnswerKeyPayload(BaseModel):
+    answer_key: dict | str = {}
+    key: Optional[dict | str] = None
+    mode: str = "replace"  # replace | merge
+    source: Optional[str] = "manual"
+
+
+@router.get("/exam-center")
+def exam_center(user: models.User = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    """Exam Center: «گذشته با نتیجه» و «آینده با آماده‌سازی» در یک صفحه."""
+    return exams_service.exam_center(db, user)
+
+
+@router.get("/exams/prep-plan/{exam_id}")
+def prep_plan(
+    exam_id: int,
+    days: Optional[int] = None,
+    user: models.User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    return exams_service.prep_plan(db, user, exam_id, days=days)
+
+
+@router.get("/exams/{exam_id}/prep-plan")
+def exam_prep_plan(
+    exam_id: int,
+    days: Optional[int] = None,
+    user: models.User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    return exams_service.prep_plan(db, user, exam_id, days=days)
+
+
+@router.put("/exams/{exam_id}/answer-key")
+def set_exam_answer_key(
+    exam_id: int,
+    payload: AnswerKeyPayload,
+    user: models.User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    result = exams_service.set_answer_key(db, user, exam_id, payload.model_dump())
+    db.commit()
+    return result
+
+
+@router.get("/exams/{exam_id}/answer-key")
+def get_exam_answer_key(exam_id: int, user: models.User = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    exam = exams_service._owned_exam(db, user, exam_id)
+    key = exam.answer_key or {}
+    return {
+        "exam_id": exam.id,
+        "answer_key": key,
+        "count": len([value for value in key.values() if value]),
+        "cleared": len([value for value in key.values() if not value]),
+        "source": exam.answer_key_source,
+        "note": "کلید آزمون جدا از برگهٔ پاسخ ذخیره می‌شود و می‌تواند بخشی خالی بماند.",
+    }
 
 
 @router.get("/exams")
