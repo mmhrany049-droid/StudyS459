@@ -719,6 +719,35 @@ class ExamAttempt(Base, TimestampMixin):
     note = Column(Text)
 
 
+class QuestionEffect(Base, TimestampMixin):
+    """Derived effect of a purposeful answer (V3.1 doc 07).
+
+    The raw answer stays in ``DailyCheckin``/``WeeklyReflection``; this table keeps
+    only the *bounded* change that was applied to a derived value, so raw data and
+    derived data never mix (V3 hard rule).
+    """
+
+    __tablename__ = "question_effects"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # points at daily_checkins.id or weekly_reflections.id depending on the channel
+    checkin_id = Column(Integer)
+    channel = Column(String(24), nullable=False)          # day_start | day_end | weekly | onboarding
+    question_code = Column(String(48), nullable=False)
+    applied_to = Column(String(64), nullable=False)       # capacity.today | priority.weight.*@weekly | ordering.today
+    day = Column(Date, nullable=False)                    # the day the effect applies to
+    delta_pct = Column(Float, default=0.0)
+    confidence = Column(Float, default=0.0)
+    evidence_count = Column(Integer, default=0)
+    note = Column(Text)
+    model_version = Column(String(32))
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "channel", "question_code", "day", name="uq_question_effect"),
+    )
+
+
 class CalendarOccasion(Base, TimestampMixin):
     """A student-defined calendar entry (V3.1 doc 05 — «حداقل ساختار داده»).
 

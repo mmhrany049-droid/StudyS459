@@ -442,13 +442,29 @@ def compute_topic_priority(
         "recent_saturation": record("recent_saturation", saturation_value, saturation_evidence),
     }
 
+    # V3.1 doc 07: weekly answers may nudge a weight a little; the multiplier is
+    # bounded, explained, and never able to remove a component from the formula.
+    from . import questioning
+
+    multipliers = questioning.weight_multipliers(db, user, day=day)
     score = 0.0
     contributions = []
     for name, value in positive.items():
-        weight = config.value(WEIGHTS[name])
+        base_weight = config.value(WEIGHTS[name])
+        adjustment = multipliers.get(WEIGHTS[name])
+        weight = round(base_weight * (adjustment["multiplier"] if adjustment else 1.0), 6)
         contribution = weight * value
         score += contribution
-        contributions.append({"component": name, "label": COMPONENT_LABELS_FA[name], "weight": weight, "contribution": round(contribution, 4)})
+        contributions.append(
+            {
+                "component": name,
+                "label": COMPONENT_LABELS_FA[name],
+                "weight": weight,
+                "base_weight": base_weight,
+                "user_adjustment": adjustment,
+                "contribution": round(contribution, 4),
+            }
+        )
     for name, value in negative.items():
         weight = config.value(NEGATIVE_WEIGHTS[name])
         contribution = -weight * value

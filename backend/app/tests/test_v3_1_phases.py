@@ -532,3 +532,98 @@ def test_phase6_task_types_registry(client):
     assert bad.status_code == 422, "نوع ناشناخته باید رد شود نه بی‌صدا «سایر» شود"
     assert bad.json()["error"]["code"] == "validation_error"
     assert "choices" in bad.json()["error"]["details"]
+
+
+# ---------------------------------------------------------------------------
+# Phase 7 — purposeful questioning wired to capacity and planner
+# ---------------------------------------------------------------------------
+
+
+def test_phase7_daily_questions_are_purposeful_and_bounded(client):
+    channels = client.get("/api/questioning/channels").json()
+    assert {item["code"] for item in channels["channels"]} == {"onboarding", "day_start", "day_end", "weekly"}
+    assert channels["ordering"]["available"] is False, "بدون شواهد، ترتیب دست‌کاری نمی‌شود"
+
+    daily = client.get("/api/questioning/daily").json()
+    start = daily["channels"]["day_start"]
+    assert 2 <= start["asked_count"] <= 4, "سند: ۲ تا ۴ سؤال"
+    assert start["skippable"] is True
+    for question in start["questions"]:
+        assert question["because"], "هیچ سؤال تزئینی پرسیده نمی‌شود"
+        assert question["information_value"] > 0
+        assert question["effect"]["target"] in {"capacity.today", "ordering.today"}
+    codes = {question["code"] for question in start["questions"]}
+    assert {"energy", "free_time"} <= codes, "انرژی و وقت آزاد هستهٔ آغاز روزند"
+    assert any(question["effect"]["target"] == "capacity.today" for question in start["questions"])
+
+    before = client.get("/api/capacity/today").json()["realistic_minutes"]
+    saved = client.post("/api/checkins", json={"phase": "start", "answers": {"energy": 1, "free_time": 1}}).json()
+    assert saved["effects"], "پاسخ‌ها اثر ثبت‌شده دارند"
+    for effect in saved["effects"]:
+        assert abs(effect["delta_pct"]) <= 0.10 + 1e-9, "یک پاسخ نباید پارامتر را جهشی عوض کند"
+
+    after = client.get("/api/capacity/today").json()
+    assert after["realistic_minutes"] < before, "گزارش کم‌انرژی ظرفیت را پایین می‌آورد"
+    adjustment = after["self_report_adjustment"]
+    assert abs(adjustment["delta_pct"]) <= 0.15 + 1e-9, "سقف اثر تجمیعی روز"
+    assert adjustment["reasons"], "تغییر ظرفیت باید توضیح‌پذیر باشد"
+    assert after["realistic_minutes"] <= after["theoretical_minutes"]
+    assert after["realistic_minutes"] >= 30
+
+    repeat = client.get("/api/questioning/daily").json()["channels"]["day_start"]
+    asked = {question["code"] for question in repeat["questions"]}
+    assert "energy" not in asked, "سؤال پاسخ‌داده‌شده دوباره پرسیده نمی‌شود (بدون اسپم)"
+
+
+def test_phase7_weekly_answers_nudge_planner_weights_and_skip_is_recorded(client):
+    weekly = client.get("/api/reflections/questions").json()
+    assert weekly["adaptive"] is True and weekly["skippable"] is True
+    codes = {question["code"] for question in weekly["questions"]}
+    assert "week_load" in codes
+
+    before = client.get("/api/questioning/weights").json()
+    assert before["weights"] == {}
+    saved = client.post("/api/reflections", json={"answers": {"week_load": "heavy"}}).json()
+    assert saved["effects"] and saved["effects"][0]["applied_to"].startswith("priority.weight.")
+
+    after = client.get("/api/questioning/weights").json()
+    assert after["weights"], "پاسخ هفتگی وزن برنامه را کمی جابه‌جا می‌کند"
+    for weight, entry in after["weights"].items():
+        assert weight.startswith("priority.weight.")
+        assert abs(entry["delta_pct"]) <= after["limit_pct"] + 1e-9, "جابه‌جایی وزن باندشده است"
+        assert entry["multiplier"] != 0
+
+    skipped = client.post("/api/checkins", json={"phase": "end", "skipped": True}).json()
+    assert skipped["skipped"] is True and skipped["recorded"] is True
+    assert skipped["effects"] == [], "رد کردن سؤال اثر الکی نمی‌سازد"
+    skipped_questions = client.get("/api/questioning/daily").json()["channels"]["day_end"]["questions"]
+    assert skipped_questions, "کانال پایان روز بعد از یک بار رد کردن بسته نمی‌شود"
+
+
+def test_phase7_preferences_only_reorder_with_enough_evidence(client, db, user):
+    from app.db import models
+
+    profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == user.id).first()
+    assert profile is not None
+    profile.personality = {
+        "discipline": {"value": 0.9, "confidence": 0.8, "evidence_count": 9, "source": "questionnaire"},
+        "novelty_preference": {"value": 0.5, "confidence": 0.2, "evidence_count": 2, "source": "questionnaire"},
+    }
+    db.commit()
+
+    ordering = client.get("/api/questioning/ordering").json()
+    assert ordering["available"] is True
+    assert [hint["key"] for hint in ordering["hints"]] == ["hard_first"], "فقط صفت با شواهد کافی اثر می‌گذارد"
+    assert ordering["hints"][0]["effect"] == "ordering_only"
+
+    candidates = [
+        {"intervention_type": "READ_LESSON", "priority_score": 0.50},
+        {"intervention_type": "DIFFICULT_PRACTICE", "priority_score": 0.495},
+        {"intervention_type": "EASY_PRACTICE", "priority_score": 0.90},
+    ]
+    from app.services import questioning
+
+    ordered, note = questioning.order_candidates(db, user, candidates)
+    assert ordered[0]["intervention_type"] == "EASY_PRACTICE", "امتیاز بالاتر مقدم است؛ ترجیح قفل نمی‌کند"
+    assert [item["intervention_type"] for item in ordered[1:]] == ["DIFFICULT_PRACTICE", "READ_LESSON"]
+    assert note and "هم‌امتیاز" in note

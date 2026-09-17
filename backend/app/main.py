@@ -26,6 +26,7 @@ from .api.routers import (
     imports,
     lab,
     planning,
+    questioning as questioning_router,
     questions,
     system,
     testing,
@@ -94,6 +95,7 @@ for router in (
     analytics.router,
     lab.router,
     calendar_router.router,
+    questioning_router.router,
 ):
     app.include_router(router, prefix="/api")
 

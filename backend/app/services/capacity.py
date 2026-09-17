@@ -251,6 +251,22 @@ def day_capacity(db: Session, user: models.User, day: Optional[_dt.date] = None)
     day = day or today_local()
     theoretical = theoretical_minutes(db, user, day)
     realistic = realistic_capacity(db, user, day)
+    # V3.1 doc 07: self-reported state may nudge *today's* realistic estimate only,
+    # inside a bounded band and always with the reasons kept for explanation.
+    from . import questioning
+
+    adjustment = questioning.combined_capacity_adjustment(db, user, day)
+    if adjustment["factor"] != 1.0:
+        base_minutes = realistic["minutes"]
+        adjusted = int(round(base_minutes * adjustment["factor"]))
+        realistic = {
+            **realistic,
+            "minutes": max(30, min(adjusted, theoretical["minutes"])),
+            "base_minutes": base_minutes,
+            "adjustment": adjustment,
+            "why": realistic["why"]
+            + f" گزارش خودت امروز برآورد را {adjustment['delta_pct'] * 100:+.0f}٪ اصلاح کرد (کوچک و باندشده).",
+        }
     tasks = list(
         db.scalars(
             select(models.StudyTask).where(
@@ -292,6 +308,7 @@ def day_capacity(db: Session, user: models.User, day: Optional[_dt.date] = None)
             "note": "ظرفیت واقعی ≠ وقت آزاد. ساعتی که آزاد است لزوماً قابل استفاده نیست.",
         },
         "explanation": realistic["why"],
+        "self_report_adjustment": realistic.get("adjustment"),
         "overload_policy": "هیچ کاری خودکار حذف نمی‌شود؛ فقط هشدار و پیشنهاد جابه‌جایی داده می‌شود.",
     }
 

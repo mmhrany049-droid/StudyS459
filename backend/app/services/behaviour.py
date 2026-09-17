@@ -538,7 +538,17 @@ WEEKLY_REFLECTION_QUESTIONS = [
 ]
 
 
-def daily_questionnaire(phase: str = "start") -> list[dict]:
+def daily_questionnaire(phase: str = "start", *, db=None, user=None) -> list[dict]:
+    """V3.1 doc 07: 2–4 purposeful questions per day, not a fixed form.
+
+    The adaptive list needs the student's evidence, so callers that have a session
+    pass it in; without a session the previous fixed list stays as a safe fallback.
+    """
+    if db is not None and user is not None:
+        from . import questioning
+
+        channel = "day_start" if phase == "start" else "day_end"
+        return questioning.questions_for(db, user, channel)
     return START_DAY_QUESTIONS if phase == "start" else END_DAY_QUESTIONS
 
 
@@ -562,6 +572,15 @@ def save_daily_checkin(db: Session, user: models.User, phase: str, answers: dict
             db, user.id, f"checkin.{phase}.{key}",
             payload={"value": value}, source="self_report", day=day,
         )
+    # V3.1 doc 07: the same answers produce *small, bounded* effects on again derived
+    # values (today's capacity / next day's estimate) and those effects are stored
+    # separately from the raw answer.
+    from . import questioning
+
+    channel = "day_start" if phase == "start" else "day_end"
+    effect_report = questioning.apply_answers(
+        db, user, channel, (answers or {}) if not skipped else {}, day=day, checkin_id=row.id, skipped=skipped
+    )
     if phase == "start" and not skipped:
         numeric = {
             key: common.to_float(common.normalize_digits(str(value))) if not isinstance(value, (int, float)) else float(value)
@@ -569,7 +588,14 @@ def save_daily_checkin(db: Session, user: models.User, phase: str, answers: dict
             if key in STATE_DIMENSIONS or key in {"sleep", "free_time", "exam_stress"}
         }
         check_in(db, user, numeric, phase="start", day=day)
-    return {"phase": phase, "date": common.jdate(day), "skipped": skipped, "recorded": True}
+    return {
+        "phase": phase,
+        "date": common.jdate(day),
+        "skipped": skipped,
+        "recorded": True,
+        "effects": effect_report["effects"],
+        "effects_note": effect_report["note"],
+    }
 
 
 def save_weekly_reflection(db: Session, user: models.User, answers: dict, *, skipped: bool = False, week_start_value=None) -> dict:
@@ -588,4 +614,16 @@ def save_weekly_reflection(db: Session, user: models.User, answers: dict, *, ski
     db.flush()
     for key, value in (answers or {}).items():
         common.observe(db, user.id, f"reflection.{key}", payload={"value": value}, source="self_report")
-    return {"week_start": common.jdate(start), "recorded": True, "skipped": skipped}
+    # V3.1 doc 07: closing the week nudges planner/goal weights a little (bounded).
+    from . import questioning
+
+    effect_report = questioning.apply_answers(
+        db, user, "weekly", (answers or {}) if not skipped else {}, day=start, checkin_id=row.id, skipped=skipped
+    )
+    return {
+        "week_start": common.jdate(start),
+        "recorded": True,
+        "skipped": skipped,
+        "effects": effect_report["effects"],
+        "effects_note": effect_report["note"],
+    }

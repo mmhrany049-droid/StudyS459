@@ -406,6 +406,13 @@ def generate_plan(db: Session, user: models.User, session: models.PlanningSessio
     priorities = priority.compute_priorities(db, user, horizon="week", day=session.week_start, limit=24)
     priority.persist_snapshots(db, user, priorities, horizon="week", computed_for=session.week_start)
 
+    # 9b: what this week's answers are allowed to nudge (small, bounded)
+    from . import questioning
+
+    week_weights = questioning.planner_weight_report(db, user, day=session.week_start)
+    if week_weights["count"]:
+        session.interview = {**(session.interview or {}), "weight_adjustments": week_weights}
+
     # 10: capacity per day
     capacities = {}
     for day in week:
@@ -638,6 +645,12 @@ def _build_candidates(
             }
         )
     candidates.sort(key=lambda item: item["priority_score"], reverse=True)
+    # V3.1 doc 07: a student preference may only re-order *near-equal* candidates.
+    from . import questioning
+
+    candidates, ordering_note = questioning.order_candidates(db, user, candidates)
+    if ordering_note:
+        session.interview = {**(session.interview or {}), "ordering_note": ordering_note}
     return candidates, unplannable_skipped
 
 
@@ -810,6 +823,17 @@ def _explain(session, allocation, capacities, context, overload, unplannable_ski
             else None
         ),
         "overload": overload,
+        # V3.1 doc 07: what the student's own answers changed (small + reversible)
+        "from_your_answers": {
+            "weight_adjustments": (session.interview or {}).get("weight_adjustments") or {},
+            "ordering_note": (session.interview or {}).get("ordering_note"),
+            "capacity_note": (
+                f"ظرفیت روزها با {sum(1 for day in capacities.values() if day.get('self_report_adjustment'))} "
+                "گزارش روزانهٔ خودت کمی اصلاح شده است."
+                if any(day.get("self_report_adjustment") for day in capacities.values())
+                else None
+            ),
+        },
         "what_can_i_change": [
             "هر کار را می‌توانی جابه‌جا، حذف، تقسیم یا ادغام کنی؛ تغییر دستی با منبع «کاربر» ثبت می‌شود.",
             "دکمه بازسازی برنامه کار تغییر‌داده‌شده توسط تو را overwrite نمی‌کند.",

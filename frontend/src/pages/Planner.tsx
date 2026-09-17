@@ -352,6 +352,31 @@ export default function Planner() {
           </div>
         </Card>
 
+        <Card title="از پاسخ‌های خودت">
+          <div className="grid gap-2 text-xs">
+            <p className="muted">
+              {(explanation?.from_your_answers?.weight_adjustments?.weights &&
+                Object.keys(explanation.from_your_answers.weight_adjustments.weights).length > 0 &&
+                "پاسخ‌های هفتگی وزن هدف/مرور را کمی جابه‌جا کرده‌اند:") ||
+                "پاسخ هفتگی‌ای که وزن برنامه را عوض کند ثبت نشده؛ برنامه با وزن‌های پایه ساخته شده است."}
+            </p>
+            {explanation?.from_your_answers?.weight_adjustments?.weights && (
+              <ul className="grid gap-1">
+                {Object.entries(explanation.from_your_answers.weight_adjustments.weights).map(([weight, entry]: any) => (
+                  <li key={weight}>
+                    {weight} → ضریب {faNumber(entry.multiplier, 2)} ({faNumber(entry.delta_pct * 100, 1)}٪)
+                  </li>
+                ))}
+              </ul>
+            )}
+            {explanation?.from_your_answers?.ordering_note && <p>{explanation.from_your_answers.ordering_note}</p>}
+            {explanation?.from_your_answers?.capacity_note && <p>{explanation.from_your_answers.capacity_note}</p>}
+            <p className="muted">
+              ترجیح شخصیتی فقط با شواهد کافی و فقط روی ترتیب پیشنهادهای هم‌امتیاز اثر می‌گذارد؛ هیچ‌چیز قفل نمی‌شود.
+            </p>
+          </div>
+        </Card>
+
         <Card title="چرا این برنامه؟">
           {explanation && Object.keys(explanation).length > 0 ? (
             <div className="grid gap-3 text-xs leading-6">

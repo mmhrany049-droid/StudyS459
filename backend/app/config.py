@@ -72,6 +72,18 @@ PARAMS: Dict[str, Param] = {
     "calendar.week_start": _p("شنبه", V2_C, USER_SPECIFIC, "Iranian week starts on Saturday"),
     # V3.1 doc 06: task types are a registry; students/extensions add their own here
     "tasks.custom_types": _p([], V3_1, USER_SPECIFIC, "انواع کار مطالعهٔ سفارشی (فهرست {code,label,family,needs_questions})"),
+    # V3.1 doc 07 — purposeful questioning: every answer moves a parameter a little
+    "questioning.daily_max_questions": _p(4, V3_1, USER_SPECIFIC, "بیشترین سؤال آغاز/پایان روز (سقف سند: ۴)"),
+    "questioning.weekly_max_questions": _p(4, V3_1, USER_SPECIFIC, "بیشترین سؤال هفتگی (سقف سند: ۴)"),
+    "questioning.max_answer_delta_pct": _p(0.10, V3_1, HEURISTIC, "سقف اثر یک پاسخ واحد روی یک پارامتر"),
+    "questioning.max_capacity_delta_pct": _p(0.15, V3_1, HEURISTIC, "سقف اثر تجمیعی گزارش‌های روز روی ظرفیت"),
+    "questioning.max_weight_delta_pct": _p(0.15, V3_1, HEURISTIC, "سقف جابه‌جایی وزن‌های برنامه به‌خاطر پاسخ هفتگی"),
+    "questioning.min_personality_evidence": _p(5, V3_1, HEURISTIC, "کمینه شواهد برای اثرگذاری ترجیح شخصیتی بر ترتیب"),
+    "questioning.min_personality_confidence": _p(0.35, V3_1, HEURISTIC, "کمینه اطمینان برای اثرگذاری ترجیح شخصیتی"),
+    "questioning.trait_high_threshold": _p(0.62, V3_1, HEURISTIC, "آستانه بالا بودن یک صفت برای اثرگذاری"),
+    "questioning.trait_low_threshold": _p(0.38, V3_1, HEURISTIC, "آستانه پایین بودن یک صفت برای اثرگذاری"),
+    "questioning.ordering_tie_epsilon": _p(0.02, V3_1, HEURISTIC, "پهنای گروه هم‌امتیاز که ترتیبش می‌تواند عوض شود"),
+    "questioning.daily_question_information_threshold": _p(0.25, V3_1, HEURISTIC, "کمینه ارزش اطلاعاتی برای پرسیدن سؤال"),
     "calendar.coins_timezone": _p("Asia/Tehran", V2_C, USER_SPECIFIC),
     # V3.1 doc 05: the product must be usable for the whole ۱۴۰۵–۱۴۰۸ window
     "calendar.min_year": _p(

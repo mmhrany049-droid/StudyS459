@@ -295,8 +295,17 @@ def save_checkin(payload: CheckinPayload, user: models.User = Depends(current_us
 
 
 @router.get("/reflections/questions")
-def reflection_questions() -> dict:
-    return {"questions": behaviour.WEEKLY_REFLECTION_QUESTIONS}
+def reflection_questions(user: models.User = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    # V3.1 doc 07: the weekly channel is adaptive and bounded too (2–4 questions).
+    from ...services import questioning
+
+    questions = questioning.questions_for(db, user, "weekly")
+    return {
+        "questions": questions or behaviour.WEEKLY_REFLECTION_QUESTIONS,
+        "adaptive": bool(questions),
+        "skippable": True,
+        "note": "پاسخ‌ها فقط وزن هدف/مرور برنامه را کمی جابه‌جا می‌کنند.",
+    }
 
 
 @router.post("/reflections")

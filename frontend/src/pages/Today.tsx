@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, TaskRow } from "../lib/api";
 import { Card, Empty, ErrorBox, Spinner, Badge, Stat } from "../components/ui";
+import { CheckinCard } from "../components/CheckinCard";
 import { faNumber, minutes, statusLabel, taskTypeLabel, toPersianDigits } from "../lib/format";
 
 type TasksPayload = {
@@ -163,6 +164,8 @@ export default function Today() {
           {!recovery && <p className="muted">در حال بررسی…</p>}
         </Card>
 
+        <CheckinCard phase="end" />
+
         <Card title="ظرفیت امروز">
           <div className="grid gap-3 sm:grid-cols-4">
             <Stat label="واقع‌بینانه" value={minutes(capacity.realistic_minutes)} />
@@ -171,6 +174,12 @@ export default function Today() {
             <Stat label="انجام‌شده" value={minutes(capacity.completed_minutes)} />
           </div>
           <p className="muted mt-3">{capacity.explanation}</p>
+          {capacity.self_report_adjustment && (
+            <p className="mt-2 rounded-xl bg-brand-50 p-3 text-xs text-brand-700">
+              این ظرفیت با گزارش خودت {faNumber(capacity.self_report_adjustment.delta_pct * 100, 1)}٪ اصلاح شده است؛
+              سقف مجاز {faNumber((capacity.self_report_adjustment.limit_pct ?? 0) * 100, 0)}٪ است.
+            </p>
+          )}
           {capacity.overloaded && (
             <p className="mt-2 rounded-xl bg-warn-100/70 p-3 text-xs text-warn-600">
               امروز بیش از ظرفیت واقع‌بینانه پر شده است. پیشنهاد جابه‌جایی داده می‌شود، ولی هیچ کاری خودکار حذف نمی‌شود.
@@ -181,6 +190,7 @@ export default function Today() {
       </div>
 
       <div className="grid gap-5">
+        <CheckinCard phase="start" />
         <Card title="خلاصه">
           <div className="grid gap-3">
             <Stat label="کار باقی‌مانده" value={toPersianDigits(remaining.length)} />
