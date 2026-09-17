@@ -53,6 +53,7 @@ def list_books(db: Session, user: models.User, include_inactive: bool = False) -
                 "topic_count": db.scalar(
                     select(func.count(models.Topic.id)).where(models.Topic.book_id == book.id)
                 ),
+                "plannable_topic_count": plannable_topic_count(db, book.id)["plannable"],
             }
         )
     return result
@@ -108,6 +109,14 @@ def topic_tree(db: Session, book_id: int, user: Optional[models.User] = None, wi
             "is_leaf": node.is_leaf,
             "direct_question_count": direct_questions,
             "total_questions": total_questions,
+            # V3.1 doc 04: every topic is visible, only topics with a question bank
+            # are plannable (time estimation, test suggestions, planner).
+            "plannable": total_questions > 0,
+            "plannable_reason": (
+                f"{total_questions} سؤال در بانک این مبحث/زیرمباحث"
+                if total_questions
+                else "بانک تست ندارد؛ فقط در درخت آموزشی دیده می‌شود"
+            ),
             "metadata": node.metadata_json or {},
             "taught_state": taught_state,
             "taught": bool(taught_map.get(node.id)),
@@ -130,6 +139,45 @@ def topic_tree(db: Session, book_id: int, user: Optional[models.User] = None, wi
     return payload
 
 
+
+def plannable_topic_ids(db: Session, topic_ids: Optional[Iterable[int]] = None) -> set[int]:
+    """Topic ids whose *subtree* holds at least one active question.
+
+    V3.1 doc 04: «همه مباحث میتوانند دیده شوند؛ همه plannable نیستند». Anything that
+    estimates time, suggests a test or schedules work goes through this filter.
+    """
+    stmt = (
+        select(models.Question.primary_topic_id)
+        .where(models.Question.active.is_(True), models.Question.primary_topic_id.is_not(None))
+        .distinct()
+    )
+    direct = {row for row in db.scalars(stmt) if row is not None}
+    if not direct:
+        return set()
+    ancestors: set[int] = set()
+    for topic_id in direct:
+        topic = db.get(models.Topic, topic_id)
+        if topic is None:
+            continue
+        ancestors.add(topic.id)
+        parent_id = topic.parent_id
+        guard = 0
+        while parent_id and guard < 32:
+            ancestors.add(parent_id)
+            parent = db.get(models.Topic, parent_id)
+            parent_id = parent.parent_id if parent else None
+            guard += 1
+    if topic_ids is not None:
+        return ancestors & set(topic_ids)
+    return ancestors
+
+
+def plannable_topic_count(db: Session, book_id: int) -> dict:
+    ids = plannable_topic_ids(db, [row for row in db.scalars(select(models.Topic.id).where(models.Topic.book_id == book_id))])
+    total = db.scalar(select(func.count(models.Topic.id)).where(models.Topic.book_id == book_id)) or 0
+    return {"plannable": len(ids), "total": total, "visible_only": total - len(ids)}
+
+
 def book_stats(db: Session, book_id: int, user: Optional[models.User] = None) -> dict:
     total_questions = db.scalar(
         select(func.count(models.Question.id)).where(models.Question.book_id == book_id, models.Question.active.is_(True))
@@ -149,12 +197,16 @@ def book_stats(db: Session, book_id: int, user: Optional[models.User] = None) ->
             .where(models.TaughtTopic.user_id == user.id, models.Topic.book_id == book_id, models.TaughtTopic.taught.is_(True))
         ) or 0
     topic_count = db.scalar(select(func.count(models.Topic.id)).where(models.Topic.book_id == book_id)) or 0
+    split = plannable_topic_count(db, book_id)
     return {
         "topic_count": topic_count,
         "question_count": total_questions,
         "questions_with_answer_key": with_key,
         "questions_missing_answer_key": total_questions - with_key,
         "taught_topics": taught,
+        "plannable_topic_count": split["plannable"],
+        "visible_only_topic_count": split["visible_only"],
+        "plannable_rule": "فقط مبحثی که بانک تست دارد وارد تخمین زمان و برنامه می‌شود.",
     }
 
 

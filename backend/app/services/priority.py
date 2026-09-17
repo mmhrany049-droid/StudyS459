@@ -486,8 +486,13 @@ def compute_topic_priority(
     }
 
 
-def actionable_topics(db: Session, user: models.User) -> list[models.Topic]:
-    """Topics that have questions in the bank *or* are explicitly relevant to a goal/exam."""
+def actionable_topics(db: Session, user: models.User, *, include_unplannable: bool = False) -> list[models.Topic]:
+    """Topics that can enter a *timed* suggestion.
+
+    V3.1 doc 04: a topic without a question bank stays visible in the curriculum but
+    is never scheduled, estimated or suggested with a time — so the planner, the
+    recommendations and the goal decomposition all consume this list.
+    """
     taught_rows = db.scalars(
         select(models.TaughtTopic.topic_id).where(models.TaughtTopic.user_id == user.id, models.TaughtTopic.taught.is_(True))
     )
@@ -517,7 +522,45 @@ def actionable_topics(db: Session, user: models.User) -> list[models.Topic]:
         topic for topic in topics
         if topic.is_leaf or topic.id in with_attempts or topic.id in exam_topics
     ]
-    return leaf_or_attempted
+    if include_unplannable:
+        return leaf_or_attempted
+    from . import curriculum as curriculum_service
+
+    plannable = curriculum_service.plannable_topic_ids(db, [topic.id for topic in leaf_or_attempted])
+    return [topic for topic in leaf_or_attempted if topic.id in plannable]
+
+
+def visible_only_count(db: Session) -> int:
+    """How many topics exist but have no question bank anywhere in their subtree."""
+    from sqlalchemy import func
+
+    total = db.scalar(select(func.count(models.Topic.id))) or 0
+    return total - len(_all_plannable_topic_ids(db))
+
+
+def _all_plannable_topic_ids(db: Session) -> set[int]:
+    from . import curriculum as curriculum_service
+
+    return curriculum_service.plannable_topic_ids(db)
+
+
+def unplannable_topics(db: Session, user: models.User) -> list[dict]:
+    """The visible-only counterparts of :func:`actionable_topics`, reported honestly."""
+    candidates = actionable_topics(db, user, include_unplannable=True)
+    plannable = {topic.id for topic in actionable_topics(db, user)}
+    rows = []
+    for topic in candidates:
+        if topic.id in plannable:
+            continue
+        rows.append(
+            {
+                "topic_id": topic.id,
+                "title": topic.title,
+                "reason": "بانک تست ندارد؛ فقط در درخت آموزشی دیده می‌شود",
+                "how_to_make_plannable": "با «بانک تست این مبحث» چند سؤال و کلید اضافه کن.",
+            }
+        )
+    return rows
 
 
 def compute_priorities(

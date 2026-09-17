@@ -516,6 +516,15 @@ def seed_research(db: Session) -> int:
     return created
 
 
+def seed_curriculum_grades(db: Session) -> dict:
+    """Grades 10–12 skeleton (V3.1 doc 04) — additive."""
+    from .curriculum_outline import seed_curriculum_outline
+
+    result = seed_curriculum_outline(db)
+    db.flush()
+    return result
+
+
 def seed_checkup_coverages(db: Session) -> dict:
     """Chemistry checkups as coverage ranges (V3.1 doc 03) — additive and idempotent."""
     from ..services import checkups
@@ -531,6 +540,7 @@ def seed_all(db: Session, user: Optional[models.User] = None, content_root: Opti
         "badges": seed_badges(db),
         "onboarding_questions": seed_onboarding_questions(db),
         "research": seed_research(db),
+        "curriculum_grades": seed_curriculum_grades(db),
         "checkup_coverages": seed_checkup_coverages(db),
         "default_classes": 0,
     }

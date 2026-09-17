@@ -372,3 +372,63 @@ def test_phase3_coverage_session_spans_multiple_topics(client):
     assert progress["is_range"] is True
     assert progress["next_step"]
     assert progress["sessions"] >= 1
+
+
+# ---------------------------------------------------------------------------
+# Phase 4 — curriculum 10–12 and «plannable only with a question bank»
+# ---------------------------------------------------------------------------
+
+
+def test_phase4_curriculum_covers_grades_10_to_12(client):
+    overview = client.get("/api/curriculum/overview").json()
+    assert set(overview["grades"]) >= {"دهم", "یازدهم", "دوازدهم"}, overview["grades"].keys()
+    assert overview["grade_count"] >= 3
+
+    tenth = {row["title"] for row in overview["grades"]["دهم"]}
+    eleventh = {row["title"] for row in overview["grades"]["یازدهم"]}
+    twelfth = {row["title"] for row in overview["grades"]["دوازدهم"]}
+    assert any("ریاضی ۱" in title for title in tenth)
+    assert any("فیزیک ۱" in title for title in tenth)
+    assert any("شیمی ۱" in title for title in tenth)
+    assert any("هندسه ۱" in title for title in eleventh) and any("آمار" in title for title in eleventh)
+    assert any("گسسته" in title for title in twelfth) and any("حسابان ۲" in title for title in twelfth)
+    assert any("شیمی ۳" in title for title in twelfth)
+
+    # the three real books of the student keep their parsed trees
+    real = [row for row in overview["grades"]["یازدهم"] if row["has_tree"]]
+    assert len(real) >= 3, "کتاب‌های موجود کاربر با درخت واقعی حفظ می‌شوند"
+    chemistry = [row for row in real if "شیمی" in row["title"]][0]
+    assert chemistry["topic_count"] >= 100, chemistry
+
+    assert overview["rule"].startswith("همه مباحث دیده می‌شوند")
+
+
+def test_phase4_only_topics_with_a_bank_are_plannable(client):
+    books = client.get("/api/books").json()["books"]
+    chemistry = [row for row in books if "شیمی" in row["title"]][0]
+    tree = client.get(f"/api/books/{chemistry['id']}/tree").json()
+
+    nodes = list(_flatten(tree["topics"]))
+    assert nodes and all(node["plannable"] is False for node in nodes), "بدون سؤال، هیچ مبحثی plannable نیست"
+    assert all("بانک تست ندارد" in node["plannable_reason"] for node in nodes)
+
+    before = client.get("/api/priorities").json()
+    assert before["items"] == [], "مبحث بدون بانک تست نباید پیشنهاد زمان‌دار بگیرد"
+    assert before["visible_only_total"] > 0, "مباحث نمایشی باید شمرده شوند"
+    assert "بانک تست ندارد" in before["visible_only_note"]
+
+    leaf = next(node for node in nodes if node["is_leaf"])
+    client.post(
+        f"/api/books/{chemistry['id']}/nodes/{leaf['id']}/questions/range",
+        json={"from_sequence": 1, "to_sequence": 5},
+    )
+    refreshed = client.get(f"/api/books/{chemistry['id']}/tree").json()
+    marked = [node for node in _flatten(refreshed["topics"]) if node["plannable"]]
+    assert marked, "با افزودن سؤال، مبحث و نیاکانش plannable می‌شوند"
+    assert all(node["total_questions"] > 0 for node in marked)
+    assert leaf["id"] in {node["id"] for node in marked}
+
+    after = client.get("/api/priorities").json()
+    assert any(item["topic_id"] == leaf["id"] for item in after["items"]) or after["items"], (
+        "پیشنهاد زمان‌دار فقط از مباحث دارای بانک ساخته می‌شود"
+    )

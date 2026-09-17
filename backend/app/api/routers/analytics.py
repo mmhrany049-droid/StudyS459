@@ -159,10 +159,23 @@ def priorities(
     from ...services import priority as priority_service
 
     items = priority_service.compute_priorities(db, user, day=parse_day(day), limit=limit)
+    visible_only = priority_service.unplannable_topics(db, user)
     return {
         "items": [
             {**item, "explanation": priority_service.explain_priority(item) if explain else None} for item in items
         ],
+        "visible_only": visible_only,
+        # curriculum-wide count: every topic that exists but cannot be scheduled yet
+        "visible_only_total": priority_service.visible_only_count(db),
+        "visible_only_note": (
+            f"{len(visible_only)} مبحث از داوطلب‌های امروز بانک تست ندارد و وارد برنامه نمی‌شود؛ "
+            f"در کل درخت {priority_service.visible_only_count(db)} مبحث فقط نمایشی است."
+            if visible_only
+            else (
+                f"در کل درخت {priority_service.visible_only_count(db)} مبحث بانک تست ندارد و فقط نمایشی است؛ "
+                "داوطلبی برای زمان‌بندی هم ساخته نشد."
+            )
+        ),
         "weights": {
             key: {"value": value.value, "provenance": value.provenance, "confidence": value.confidence}
             for key, value in __import__("app.config", fromlist=["config"]).PARAMS.items()

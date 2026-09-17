@@ -75,6 +75,9 @@ export type TopicNode = {
   taught: boolean;
   direct_question_count?: number;
   total_questions?: number;
+  // V3.1 doc 04: visible in the curriculum, but only scheduled when a bank exists
+  plannable?: boolean;
+  plannable_reason?: string;
   metadata?: Record<string, unknown>;
   children: TopicNode[];
 };

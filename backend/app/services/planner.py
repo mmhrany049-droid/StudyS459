@@ -416,10 +416,12 @@ def generate_plan(db: Session, user: models.User, session: models.PlanningSessio
         capacities[day] = payload
 
     # 11-12: intervention + duration per candidate
-    candidates = _build_candidates(db, user, session, priorities, context, capacities, week)
+    candidates, unplannable_skipped = _build_candidates(
+        db, user, session, priorities, context, capacities, week
+    )
     # 13-14: allocation with balance between exam / goal / review / coverage
     allocation, overload = _allocate(db, user, session, candidates, capacities, week, plan_style)
-    explanation = _explain(session, allocation, capacities, context, overload)
+    explanation = _explain(session, allocation, capacities, context, overload, unplannable_skipped)
 
     existing_auto = list(
         db.scalars(
@@ -518,7 +520,7 @@ def _build_candidates(
     context: dict,
     capacities: dict,
     week: list[_dt.date],
-) -> list[dict]:
+) -> tuple[list[dict], list[int]]:
     """Step 11-12-14: intervention + duration + balancing weights."""
     candidates: list[dict] = []
     exam_share = config.value("exam.mock_prep_share")
@@ -540,6 +542,20 @@ def _build_candidates(
 
     for goal in context["goals"]:
         goal_topic_ids |= set(goal_service.goal_scope_topics(db, goal))
+
+    # V3.1 doc 04: a topic without a question bank never enters a timed plan
+    from . import curriculum as curriculum_service
+
+    plannable = curriculum_service.plannable_topic_ids(
+        db,
+        sorted(exam_topic_ids | goal_topic_ids | {item["topic_id"] for item in priorities}),
+    )
+    unplannable_skipped = sorted(
+        (exam_topic_ids | goal_topic_ids | {item["topic_id"] for item in priorities}) - plannable
+    )
+    exam_topic_ids &= plannable
+    goal_topic_ids &= plannable
+    priorities = [item for item in priorities if item["topic_id"] in plannable]
 
     # review-driven candidates come first: review is cheap and protects retention
     review_items = review.open_items(db, user, limit=config.value("review.max_questions_per_session"))
@@ -622,7 +638,7 @@ def _build_candidates(
             }
         )
     candidates.sort(key=lambda item: item["priority_score"], reverse=True)
-    return candidates
+    return candidates, unplannable_skipped
 
 
 def _allocate(
@@ -766,7 +782,8 @@ def _task_title(candidate: dict) -> str:
     return f"{label} — {topic}"
 
 
-def _explain(session, allocation, capacities, context, overload) -> dict:
+def _explain(session, allocation, capacities, context, overload, unplannable_skipped=None) -> dict:
+    unplannable_skipped = unplannable_skipped or []
     by_kind: dict[str, int] = {}
     for item in allocation:
         by_kind[item["kind"]] = by_kind.get(item["kind"], 0) + 1
@@ -785,6 +802,13 @@ def _explain(session, allocation, capacities, context, overload) -> dict:
         ],
         "goals": [goal.title for goal in context["goals"][:3]],
         "review_open": context["review"]["open"],
+        "excluded_without_bank": len(unplannable_skipped),
+        "excluded_note": (
+            f"{len(unplannable_skipped)} مبحث از برنامه کنار گذاشته شد چون بانک تست ندارد؛ "
+            "در درخت آموزشی باقی می‌ماند."
+            if unplannable_skipped
+            else None
+        ),
         "overload": overload,
         "what_can_i_change": [
             "هر کار را می‌توانی جابه‌جا، حذف، تقسیم یا ادغام کنی؛ تغییر دستی با منبع «کاربر» ثبت می‌شود.",

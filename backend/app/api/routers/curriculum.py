@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from ...core.timeutil import today_local
 from ...db.base import get_db
 from ...db import models
+from ...db.curriculum_outline import curriculum_overview
 from ...services import common, curriculum, learning
 from ..deps import current_user
 
@@ -39,6 +40,12 @@ class MappingPayload(BaseModel):
     topic_ids: list[int]
     relation: str = "related"
     reason: str | None = None
+
+
+@router.get("/curriculum/overview")
+def overview(user: models.User = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    """Grades ۱۰–۱۲ with the visible/plannable split (V3.1 doc 04)."""
+    return curriculum_overview(db, user)
 
 
 @router.get("/books")

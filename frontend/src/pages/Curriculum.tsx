@@ -20,6 +20,8 @@ export default function Curriculum() {
   const [busy, setBusy] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+  const [overview, setOverview] = useState<any>(null);
+  const [grade, setGrade] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -29,6 +31,13 @@ export default function Curriculum() {
         if (payload.books[0]) setActiveBook(payload.books[0].id);
       })
       .catch((err) => setError(err.message));
+    api
+      .get<any>("/curriculum/overview")
+      .then((payload) => {
+        setOverview(payload);
+        setGrade((current: string | null) => current ?? Object.keys(payload.grades ?? {})[0] ?? null);
+      })
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -108,6 +117,9 @@ export default function Curriculum() {
                 {(node.direct_question_count ?? 0) > 0 ? "بانک تست دارد" : "بانک تست خالی"}
               </span>
             )}
+            <span className={node.plannable ? "badge-ok" : "badge-muted"} title={node.plannable_reason}>
+              {node.plannable ? "قابل برنامه‌ریزی" : "فقط نمایشی"}
+            </span>
           </div>
           {hasChildren && isOpen && <ul>{renderNodes(node.children, depth + 1)}</ul>}
         </li>
@@ -128,16 +140,51 @@ export default function Curriculum() {
             </span>
           }
         >
+          {overview && (
+            <div className="mb-3 grid gap-2">
+              <div className="flex flex-wrap gap-2">
+                {Object.keys(overview.grades ?? {}).map((name) => (
+                  <button
+                    key={name}
+                    className={name === grade ? "btn-primary btn-xs" : "btn-ghost btn-xs"}
+                    onClick={() => setGrade(name)}
+                  >
+                    پایه {name}
+                  </button>
+                ))}
+              </div>
+              <p className="muted">
+                {(overview.grades?.[grade ?? ""] ?? []).length} کتاب در این پایه · قابل برنامه‌ریزی:{" "}
+                {toPersianDigits(
+                  (overview.grades?.[grade ?? ""] ?? []).reduce(
+                    (sum: number, row: any) => sum + (row.plannable_topic_count ?? 0),
+                    0,
+                  ),
+                )}{" "}
+                مبحث · فقط نمایشی:{" "}
+                {toPersianDigits(
+                  (overview.grades?.[grade ?? ""] ?? []).reduce(
+                    (sum: number, row: any) => sum + (row.visible_only_topic_count ?? 0),
+                    0,
+                  ),
+                )}{" "}
+                مبحث
+              </p>
+            </div>
+          )}
+
           <div className="mb-3 flex flex-wrap gap-2">
-            {books.map((book) => (
+            {books
+              .filter((book) => !grade || !overview?.grades?.[grade] || (overview.grades[grade] as any[]).some((row) => row.book_id === book.id))
+              .map((book) => (
               <button
                 key={book.id}
                 className={book.id === activeBook ? "btn-primary btn-xs" : "btn-ghost btn-xs"}
                 onClick={() => setActiveBook(book.id)}
               >
-                {book.title}
-              </button>
-            ))}
+                  {book.title}
+                </button>
+              ))}
           </div>
 
           <p className="muted mb-3">
