@@ -10,6 +10,8 @@ venv/
 
 # Local databases / runtime data
 backend/data/
+# uploaded exam files live beside the app at runtime; never commit them
+backend/app/data/
 *.db
 *.db-journal
 *.sqlite3
