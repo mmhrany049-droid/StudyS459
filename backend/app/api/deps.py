@@ -28,3 +28,16 @@ def parse_day(value: Optional[str]):
     if value in (None, "", "today"):
         return None
     return common.parse_date_if_string(value)
+
+
+def parse_day_strict(value: Optional[str], *, default=None):
+    """Like :func:`parse_day`, but a date that was given and cannot exist raises 422
+    instead of quietly falling back to today (no silent wrong day)."""
+    if value in (None, "", "today"):
+        return default
+    parsed = common.parse_date_if_string(value)
+    if parsed is None:
+        from ..core.errors import ValidationError
+
+        raise ValidationError("تاریخ نامعتبر است؛ نمونهٔ درست: ۱۴۰۵/۰۶/۲۸.")
+    return parsed

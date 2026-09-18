@@ -125,7 +125,7 @@ def create_task(db: Session, user: models.User, payload: dict, *, planner_versio
         recommendation_id=common.to_int(payload.get("recommendation_id")),
         parent_task_id=common.to_int(payload.get("parent_task_id")),
         planned_date=planned_date,
-        planned_start_time=payload.get("planned_start_time"),
+        planned_start_time=common.parse_time_clock(payload.get("planned_start_time")),
         planned_question_count=question_count,
         planned_minutes=planned_minutes,
         duration_low=duration_low,
@@ -180,6 +180,11 @@ def update_task(db: Session, user: models.User, task_id: int, changes: dict, *, 
                 value = common.to_int(value)
             elif attribute == "priority_score":
                 value = common.to_float(value)
+            elif attribute == "planned_start_time":
+                value = common.parse_time_clock(value)
+                if value is None:
+                    task.planned_start_time = None
+                    continue
             setattr(task, attribute, value)
     if "planned_date" in changes and changes["planned_date"]:
         task.planned_date = common.parse_date_if_string(changes["planned_date"])

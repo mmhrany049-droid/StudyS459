@@ -13,6 +13,8 @@ export default function Planner() {
   const [decisions, setDecisions] = useState<Record<number, string>>({});
   const [typeRegistry, setTypeRegistry] = useState<any[]>([]);
   const [draft, setDraft] = useState({ title: "", task_type: "practice_test", planned_date: "", planned_minutes: "", planned_question_count: "" });
+  const [timeline, setTimeline] = useState<any>(null);
+  const [timelineDate, setTimelineDate] = useState<string>("");
 
   function load() {
     setError(null);
@@ -26,6 +28,8 @@ export default function Planner() {
         setWeek(payload);
         const today = (payload?.days ?? []).find((day: any) => day.is_today) ?? payload?.days?.[0];
         if (today?.date) setDraft((current) => (current.planned_date ? current : { ...current, planned_date: today.date }));
+        const timelineDefault = (payload?.calendar?.days ?? []).find((row: any) => row.is_today) ?? payload?.calendar?.days?.[1] ?? payload?.calendar?.days?.[0];
+        if (timelineDefault?.date) setTimelineDate((current: string) => current || timelineDefault.date);
       })
       .catch(() => undefined);
     api
@@ -38,6 +42,14 @@ export default function Planner() {
       .catch(() => undefined);
   }
   useEffect(load, []);
+
+  useEffect(() => {
+    if (!timelineDate) return;
+    api
+      .get<any>(`/timeline/day?date=${encodeURIComponent(timelineDate)}`)
+      .then(setTimeline)
+      .catch(() => undefined);
+  }, [timelineDate, week]);
 
   const stages = (session as any)?.stages as { key: string; label: string }[] | undefined;
   const questions = (session as any)?.questions as any[] | undefined;
@@ -286,6 +298,108 @@ export default function Planner() {
                 ))}
               </div>
               <p className="muted mt-2">{week.calendar.note}</p>
+            </>
+          )}
+        </Card>
+
+        <Card
+          title="تایم‌لاین روز"
+          action={<span className="muted">{timeline ? `${timeline.date_long} — ${timeline.window.from} تا ${timeline.window.to}` : ""}</span>}
+        >
+          {week?.calendar?.days && (
+            <div className="mb-3 flex flex-wrap gap-1">
+              {week.calendar.days.map((row: any) => (
+                <button
+                  key={row.date}
+                  className={`btn-ghost btn-xs ${timelineDate === row.date ? "ring-2 ring-brand-500" : ""}`}
+                  onClick={() => setTimelineDate(row.date)}
+                >
+                  {row.weekday} {toPersianDigits(row.jalali.day)}
+                  {row.is_holiday ? " (تعطیل)" : ""}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {!timeline ? (
+            <p className="muted">تایم‌لاین در حال بارگذاری است…</p>
+          ) : (
+            <>
+              <ul className="grid gap-1">
+                {timeline.entries.map((entry: any, index: number) => (
+                  <li
+                    key={index}
+                    className={`flex items-start gap-2 rounded-xl border p-2 text-xs ${
+                      entry.kind === "activity" || entry.kind === "class"
+                        ? "border-ink-200 bg-ink-50"
+                        : entry.kind === "exam"
+                          ? "border-warn-200 bg-warn-100/40"
+                          : entry.suggested
+                            ? "border-dashed border-ink-200 bg-white"
+                            : "border-brand-200 bg-brand-50"
+                    }`}
+                  >
+                    <span className="num w-[86px] shrink-0 text-ink-600">
+                      {entry.start ?? "—"}–{entry.end ?? "—"}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="font-medium">{entry.title}</span>
+                      {entry.kind === "activity" && <span className="badge-muted mr-2">فعالیت</span>}
+                      {entry.kind === "class" && <span className="badge-muted mr-2">کلاس</span>}
+                      {entry.kind === "exam" && <span className="badge-warn mr-2">آزمون</span>}
+                      {entry.kind === "task" && entry.suggested && <span className="badge-muted mr-2">پیشنهادی</span>}
+                      {entry.kind === "task" && !entry.suggested && <span className="badge-muted mr-2">{entry.status_label}</span>}
+                      <div className="muted mt-0.5">
+                        {toPersianDigits(entry.minutes)} دقیقه — {entry.why}
+                      </div>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              {(timeline.unplaced ?? []).length > 0 && (
+                <div className="mt-2 rounded-xl bg-warn-100/60 p-2 text-xs text-warn-600">
+                  {toPersianDigits(timeline.unplaced.length)} کار در این روز جا نشد:{" "}
+                  {(timeline.unplaced ?? []).map((row: any) => row.title).join("، ")} — هیچ‌کدام حذف نمی‌شوند؛
+                  می‌توانی روزشان را عوض کنی.
+                </div>
+              )}
+
+              {(timeline.conflicts ?? []).length > 0 && (
+                <div className="mt-2 rounded-xl bg-bad-50 p-2 text-xs text-bad-600">
+                  {(timeline.conflicts ?? []).map((row: any, index: number) => (
+                    <div key={index}>
+                      هم‌پوشانی: «{row.a.title}» ({row.a.start}–{row.a.end}) و «{row.b.title}» ({row.b.start}–{row.b.end}) —{" "}
+                      {row.note}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
+                <div className="rounded-xl bg-ink-50 p-2">
+                  کار برنامه‌ریزی‌شده: {toPersianDigits(timeline.totals.planned_task_minutes)}′ از ظرفیت{" "}
+                  {toPersianDigits(timeline.totals.realistic_capacity_minutes)}′
+                </div>
+                <div className="rounded-xl bg-ink-50 p-2">
+                  زمان اشغال‌شدهٔ ثابت (فعالیت/کلاس/آزمون): {toPersianDigits(timeline.totals.fixed_minutes)}′
+                </div>
+                <div className="rounded-xl bg-ink-50 p-2">
+                  باقی‌مانده: {toPersianDigits(timeline.totals.remaining_minutes)}′
+                </div>
+              </div>
+
+              {(timeline.free_windows ?? []).length > 0 && (
+                <p className="muted mt-2">
+                  پنجره‌های خالی:{" "}
+                  {(timeline.free_windows ?? [])
+                    .map((row: any) => `${row.from}–${row.to} (${toPersianDigits(row.minutes)}′)`)
+                    .join("، ")}
+                </p>
+              )}
+
+              <p className="muted mt-2">{timeline.notes.view_only}</p>
+              <p className="muted mt-1">{timeline.notes.suggested}</p>
             </>
           )}
         </Card>

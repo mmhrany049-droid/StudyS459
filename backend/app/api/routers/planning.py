@@ -18,7 +18,7 @@ from ...services import (
     planner,
     tasks as tasks_service,
 )
-from ..deps import current_user, parse_day
+from ..deps import current_user, parse_day, parse_day_strict
 
 router = APIRouter(tags=["planning"])
 
@@ -344,11 +344,7 @@ def create_activity(
     from ...core.errors import ValidationError
 
     def _time(value):
-        if not value:
-            return None
-        import datetime as _dt
-
-        return _dt.time.fromisoformat(value)
+        return common.parse_time_clock(value)
 
     if not activity_registry.is_valid_scheduling(payload.scheduling_type):
         raise ValidationError(
@@ -403,6 +399,28 @@ def delete_activity(activity_id: int, user: models.User = Depends(current_user),
     return {"id": activity_id, "active": False}
 
 
+@router.get("/timeline/day")
+def timeline_day(
+    date: Optional[str] = None,
+    include_suggested: bool = True,
+    user: models.User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """V3.1 doc 08: the daily timeline — fixed blocks plus *suggested* slots, view only."""
+    from ...services import timeline as timeline_service
+
+    day = parse_day_strict(date, default=today_local())
+    return timeline_service.day_timeline(db, user, day, include_suggested=include_suggested)
+
+
+@router.get("/timeline/week")
+def timeline_week(week: Optional[str] = None, user: models.User = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    from ...services import timeline as timeline_service
+
+    reference = parse_day_strict(week, default=today_local())
+    return timeline_service.week_timeline(db, user, reference)
+
+
 @router.get("/activities/types")
 def activity_types() -> dict:
     """Categories and scheduling types are data, not a hard-coded list in the engine."""
@@ -446,8 +464,8 @@ def create_class(payload: ClassPayload, user: models.User = Depends(current_user
         subject_id=payload.subject_id,
         kind=payload.kind,
         day_of_week=payload.day_of_week,
-        start_time=_dt.time.fromisoformat(payload.start_time) if payload.start_time else None,
-        end_time=_dt.time.fromisoformat(payload.end_time) if payload.end_time else None,
+        start_time=common.parse_time_clock(payload.start_time),
+        end_time=common.parse_time_clock(payload.end_time),
         recurring=payload.recurring,
         notes=payload.notes,
         source="manual",
@@ -473,7 +491,7 @@ def update_class(
             setattr(klass, key, changes[key])
     for key in ["start_time", "end_time"]:
         if key in changes:
-            setattr(klass, key, _dt.time.fromisoformat(changes[key]) if changes[key] else None)
+            setattr(klass, key, common.parse_time_clock(changes[key]))
     db.commit()
     return {"id": klass.id, "updated": True}
 

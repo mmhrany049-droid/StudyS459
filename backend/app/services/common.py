@@ -162,6 +162,33 @@ def chunks(sequence: Iterable, size: int) -> Iterable[list]:
         yield batch
 
 
+def parse_time_clock(value) -> Optional[_dt.time]:
+    """«۰۸:۳۰» / «8:30» / «8» / 8 → datetime.time.
+
+    SQLite's Time column rejects raw strings, so every writer must go through here;
+    the same helper keeps Persian digits and the «ساعت ۸» habit working.
+    """
+    if value in (None, ""):
+        return None
+    if isinstance(value, _dt.time):
+        return value
+    if isinstance(value, (int, float)):
+        hour, minute = int(value), 0
+    else:
+        text = normalize_digits(str(value)).strip().replace(".", ":")
+        if ":" in text:
+            hour_text, _, minute_text = text.partition(":")
+        else:
+            hour_text, minute_text = text, "0"
+        try:
+            hour, minute = int(hour_text or 0), int(minute_text or 0)
+        except (TypeError, ValueError):
+            raise ValidationError("ساعت باید به شکل ۸:۳۰ باشد.")
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        raise ValidationError("ساعت معتبر نیست؛ بازهٔ درست ۰:۰۰ تا ۲۳:۵۹ است.")
+    return _dt.time(hour=hour, minute=minute)
+
+
 def normalize_digits(text: str) -> str:
     """Persian/Arabic digits -> latin (users type «۱۴۰۴/۰۶/۲۴» all the time)."""
     return jalali.normalize_digits(text)
@@ -172,7 +199,12 @@ def to_persian_digits(text: str) -> str:
 
 
 def parse_date_if_string(value: Any) -> Optional[_dt.date]:
-    """Accept ISO (2026-09-15) or Jalali (1405/06/24) strings."""
+    """Accept ISO (2026-09-15) or Jalali (1405/06/24) strings.
+
+    A date that *cannot exist* («۱۴۰۵/۹۹/۹۹») returns ``None`` instead of raising,
+    so routers answer with an honest 422 rather than a 500 from deep inside the
+    Jalali engine.
+    """
     if value is None or value == "":
         return None
     if isinstance(value, _dt.datetime):
@@ -180,11 +212,14 @@ def parse_date_if_string(value: Any) -> Optional[_dt.date]:
     if isinstance(value, _dt.date):
         return value
     text = str(value).strip()
-    if "/" in text and text[:4].isdigit() and int(text[:4]) > 1500:
+    try:
+        if "/" in text and text[:4].isdigit() and int(text[:4]) > 1500:
+            return jalali.parse_jalali(text)
+        if "-" in text and len(text) >= 8 and text[4] == "-":
+            return _dt.date.fromisoformat(text[:10])
         return jalali.parse_jalali(text)
-    if "-" in text and len(text) >= 8 and text[4] == "-":
-        return _dt.date.fromisoformat(text[:10])
-    return jalali.parse_jalali(text)
+    except (jalali.JalaliError, ValueError):
+        return None
 
 
 def parse_datetime_if_string(value: Any) -> Optional[_dt.datetime]:

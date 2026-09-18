@@ -139,6 +139,8 @@ PARAMS: Dict[str, Param] = {
     "capacity.max_daily_minutes": _p(300, V3, HEURISTIC, "anti over-planning ceiling for one day"),
     "capacity.overload_tolerance": _p(1.0, V3, HEURISTIC, "planned minutes / realistic capacity"),
     "capacity.gradual_change_step": _p(0.15, V21, HEURISTIC, "capacity adapts gradually"),
+    # V3.1 doc 08: the day timeline starts at this clock (display only)
+    "capacity.timeline_start_time": _p("07:00", V3_1, USER_SPECIFIC, "ساعت شروع نمایش تایم‌لاین روز"),
     # ------------------------------------------------------------------
     # Session / time-on-task
     # ------------------------------------------------------------------

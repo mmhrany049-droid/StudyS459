@@ -157,23 +157,8 @@ def _owned_exam(db: Session, user: models.User, exam_id: int) -> models.Exam:
 
 
 def parse_clock(value) -> Optional[_dt.time]:
-    """«۰۸:۳۰» / «8:30» / «8» -> datetime.time, so SQLite never sees a raw string."""
-    if value in (None, ""):
-        return None
-    if isinstance(value, _dt.time):
-        return value
-    text = common.normalize_digits(str(value)).strip().replace(".", ":")
-    if ":" in text:
-        hour_text, _, minute_text = text.partition(":")
-    else:
-        hour_text, minute_text = text, "0"
-    try:
-        hour, minute = int(hour_text), int(minute_text or 0)
-    except (TypeError, ValueError):
-        raise ValidationError("ساعت شروع باید به شکل ۸:۳۰ باشد.")
-    if not (0 <= hour <= 23 and 0 <= minute <= 59):
-        raise ValidationError("ساعت شروع معتبر نیست.")
-    return _dt.time(hour=hour, minute=minute)
+    """Kept for compatibility: exams and tasks share one clock parser now."""
+    return common.parse_time_clock(value)
 
 
 def create_exam(db: Session, user: models.User, payload: dict) -> models.Exam:

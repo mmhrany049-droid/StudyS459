@@ -753,3 +753,143 @@ def test_phase8_readiness_ignores_untested_topics(client):
     center = client.get("/api/exam-center").json()
     row = next(item for item in center["upcoming"] if item["id"] == exam["id"])
     assert row["prep"]["readiness"]["value"] is None
+
+
+def test_phase8_day_timeline_is_a_view_not_a_plan(client):
+    """Doc 08 «Planner: تقویم شمسی + timeline روزانه»: fixed blocks stay put,
+    untimed tasks only get a *suggested* slot, and clashes are reported not resolved."""
+    day = "1405/06/28"
+    client.post(
+        "/api/activities",
+        json={
+            "title": "باشگاه",
+            "category": "gym",
+            "scheduling_type": "fixed",
+            "date": day,
+            "start_time": "18:00",
+            "end_time": "19:30",
+        },
+    )
+    client.post(
+        "/api/exams",
+        json={"title": "امتحان شیمی", "exam_type": "school", "date": day, "start_time": "08:30", "planned_duration_minutes": 90},
+    )
+    fixed_task = client.post(
+        "/api/tasks",
+        json={
+            "title": "تمرین با ساعت",
+            "task_type": "practice_test",
+            "planned_date": day,
+            "planned_question_count": 10,
+            "planned_start_time": "16:00",
+            "planned_minutes": 40,
+        },
+    ).json()
+    for title in ("مرور فیزیک", "جزوه شیمی"):
+        client.post("/api/tasks", json={"title": title, "task_type": "review", "planned_date": day, "planned_question_count": 8})
+
+    timeline = client.get("/api/timeline/day", params={"date": day}).json()
+    assert timeline["date"] == "۱۴۰۵/۰۶/۲۸"
+    assert timeline["window"]["from"] == "07:00"
+    by_kind: dict[str, list[dict]] = {}
+    for entry in timeline["entries"]:
+        by_kind.setdefault(entry["kind"], []).append(entry)
+
+    gym = by_kind["activity"][0]
+    assert (gym["start"], gym["end"], gym["minutes"]) == ("18:00", "19:30", 90)
+    assert gym["fixed"] is True and "انجام‌نشده" in gym["why"], "فعالیت هرگز کار انجام‌نشده نیست"
+
+    exam = by_kind["exam"][0]
+    assert (exam["start"], exam["end"]) == ("08:30", "10:00")
+
+    timed = next(row for row in by_kind["task"] if row["task_id"] == fixed_task["id"])
+    assert timed["start"] == "16:00" and timed["end"] == "16:40" and timed["suggested"] is False
+
+    suggested = [row for row in by_kind["task"] if row["suggested"]]
+    assert len(suggested) == 2, "کارهای بدون ساعت چیدمان پیشنهادی می‌گیرند"
+    for row in suggested:
+        assert row["start"] is not None
+        # a suggestion never lands on a fixed block
+        for other in timeline["entries"]:
+            if other["fixed"] and other["start"] is not None:
+                assert not (row["start_minutes"] < other["end_minutes"] and other["start_minutes"] < row["end_minutes"]), (
+                    f"چیدمان پیشنهادی روی «{other['title']}» افتاد"
+                )
+
+    expected_minutes = 40 + sum(row["minutes"] for row in suggested)
+    assert timeline["totals"]["planned_task_minutes"] == expected_minutes
+    assert timeline["totals"]["fixed_minutes"] == 90 + 90 + 40, "فعالیت + آزمون + کار ساعت‌دار"
+    assert timeline["totals"]["realistic_capacity_minutes"] > 0
+    assert timeline["totals"]["remaining_minutes"] >= 0
+    assert timeline["free_windows"], "پنجره‌های خالی گزارش می‌شوند"
+    assert timeline["notes"]["view_only"].startswith("این تایم‌لاین فقط نمایش است")
+
+    # nothing was persisted by looking at the timeline
+    again = client.get("/api/tasks").json()
+    rows = again["tasks"] if isinstance(again, dict) else again
+    untimed = [row for row in rows if row["title"] in {"مرور فیزیک", "جزوه شیمی"}]
+    assert all(row["planned_start_time"] is None for row in untimed), "نمایش، ساعت را روی داده ذخیره نمی‌کند"
+
+    # an overlap between two fixed blocks is reported and left alone
+    client.post(
+        "/api/activities",
+        json={"title": "کلاس زبان", "category": "class", "scheduling_type": "fixed", "date": day, "start_time": "18:30", "end_time": "20:00"},
+    )
+    clash = client.get("/api/timeline/day", params={"date": day}).json()
+    assert clash["conflicts"], "هم‌پوشانی باید گزارش شود"
+    assert any("باشگاه" in row["a"]["title"] or "باشگاه" in row["b"]["title"] for row in clash["conflicts"])
+    assert "جابه‌جا نمی‌شود" in clash["conflicts"][0]["note"]
+
+    week = client.get("/api/timeline/week").json()
+    assert len(week["days"]) == 7 and week["from"] and week["to"]
+    assert week["days"][0]["weekday"] == "شنبه"
+
+    bad = client.get("/api/timeline/day", params={"date": "۱۴۰۵/۹۹/۹۹"})
+    assert bad.status_code == 422, "تاریخ نامعتبر باید رد شود"
+
+
+def test_phase8_clocks_accept_persian_digits_and_never_store_strings(client):
+    """SQLite Time columns reject raw strings — every clock goes through one parser."""
+    task = client.post(
+        "/api/tasks",
+        json={
+            "title": "کار با ساعت شمسی",
+            "task_type": "practice_test",
+            "planned_date": "1405/06/28",
+            "planned_question_count": 10,
+            "planned_start_time": "۱۶:۰۰",
+        },
+    )
+    assert task.status_code == 200, task.text
+    assert task.json()["planned_start_time"] == "16:00"
+
+    activity = client.post(
+        "/api/activities",
+        json={
+            "title": "کلاس زبان",
+            "category": "class",
+            "scheduling_type": "fixed",
+            "date": "1405/06/28",
+            "start_time": "۱۸:۰۰",
+            "end_time": "۱۹:۳۰",
+        },
+    )
+    assert activity.status_code == 200, activity.text
+
+    klass = client.post(
+        "/api/classes",
+        json={"title": "ریاضی مدرسه", "day_of_week": 1, "start_time": "۷", "end_time": "۸:۳۰"},
+    )
+    assert klass.status_code in (200, 201), klass.text
+
+    patched = client.patch(f"/api/tasks/{task.json()['id']}", json={"planned_start_time": "۸"})
+    assert patched.status_code == 200 and patched.json()["planned_start_time"] == "08:00"
+
+    bad_task = client.post("/api/tasks", json={"title": "x", "task_type": "review", "planned_start_time": "۲۵:۹۹"})
+    assert bad_task.status_code == 422
+    bad_activity = client.post("/api/activities", json={"title": "y", "category": "gym", "start_time": "ظهر"})
+    assert bad_activity.status_code == 422, "ساعت نامعتبر باید ۴۲۲ بدهد نه ۵۰۰"
+
+    timeline = client.get("/api/timeline/day", params={"date": "1405/06/28"}).json()
+    timed = [row for row in timeline["entries"] if row["kind"] == "task" and row["task_id"] == task.json()["id"]][0]
+    assert timed["start"] == "08:00", "ویرایش ساعت در تایم‌لاین دیده می‌شود"
