@@ -904,22 +904,33 @@ def _readiness(db: Session, exam: models.Exam) -> dict:
             )
         )
     )
-    if not states:
+    # Only topics with *actual evidence* count. Averaging untested topics in as zero
+    # would be false precision and would label a student «آمادهٔ صفر» without data
+    # (V3 hard rules: no false precision, one error ≠ weakness, NOT_ENTERED ≠ wrong).
+    with_evidence = [state for state in states if (state.attempts or 0) > 0 or (state.answered or 0) > 0]
+    if not with_evidence:
         return {
-            "value": 0.0,
+            "value": None,
             "topic_count": len(topic_ids),
-            "evidence": "مبحث علامت خورده است ولی هنوز تمرینی ثبت نشده؛ پس آمادگی صفر شمرده می‌شود، نه «بد».",
+            "topic_count_with_evidence": 0,
+            "evidence": (
+                f"{len(topic_ids)} مبحث علامت خورده اما هنوز برای هیچ‌کدام تمرینی ثبت نشده؛ "
+                "آمادگی تخمین زده نمی‌شود (نه صفر، نه خوب)."
+            ),
         }
-    coverage = sum((state.coverage or 0) for state in states) / len(topic_ids)
-    accuracy = sum((state.accuracy or 0) for state in states) / len(topic_ids)
+    coverage = sum((state.coverage or 0) for state in with_evidence) / len(with_evidence)
+    accuracy = sum((state.accuracy or 0) for state in with_evidence) / len(with_evidence)
     value = round(0.6 * coverage + 0.4 * accuracy, 3)
     return {
         "value": value,
         "coverage": round(coverage, 3),
         "accuracy": round(accuracy, 3),
         "topic_count": len(topic_ids),
-        "attempt_topic_count": len(states),
-        "evidence": f"{len(states)} مبحث از {len(topic_ids)} مبحث علامت‌خورده داده دارد؛ بقیه بدون داده‌اند.",
+        "topic_count_with_evidence": len(with_evidence),
+        "evidence": (
+            f"{len(with_evidence)} مبحث از {len(topic_ids)} مبحث علامت‌خورده داده دارد؛ "
+            "مباحث بدون داده در تخمین حساب نمی‌شوند."
+        ),
     }
 
 

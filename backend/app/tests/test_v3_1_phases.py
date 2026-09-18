@@ -726,3 +726,30 @@ def test_phase8_activity_registry_is_extensible_and_separate_from_tasks(client):
 
     version = client.get("/api/health").json()
     assert version["model_version"] == "v3.1.0", "نسخهٔ مدل با ارتقا جلو می‌رود"
+
+
+def test_phase8_readiness_ignores_untested_topics(client):
+    """No false precision: marking topics without any attempt must not read as 0%."""
+    from app.db import models
+
+    exam = client.post(
+        "/api/exams", json={"title": "امتحان بدون داده", "exam_type": "school", "date": "1405/08/10"}
+    ).json()
+    tree = client.get("/api/books/2/tree").json()
+    chapter = next(node for node in tree["topics"] if node["node_type"] == "chapter")
+    client.post(
+        f"/api/exams/{exam['id']}/topics",
+        json={"topic_id": chapter["id"], "mark_kind": "planned", "checked": True},
+    )
+
+    detail = client.get(f"/api/exams/{exam['id']}").json()
+    readiness = detail["readiness"]
+    assert readiness["topic_count"] > 1, "مباحث فصل علامت خورده‌اند"
+    assert readiness["value"] is None, "بدون شاهد، آمادگی صفر گزارش نمی‌شود"
+    assert readiness["topic_count_with_evidence"] == 0
+    assert "تمرینی ثبت نشده" in readiness["evidence"]
+    assert detail["next_action"]["kind"] == "quiet_test", "قدم بعدی، تمرین کوتاه است نه ادعای ضعف"
+
+    center = client.get("/api/exam-center").json()
+    row = next(item for item in center["upcoming"] if item["id"] == exam["id"])
+    assert row["prep"]["readiness"]["value"] is None
