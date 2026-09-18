@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import pathlib
 
 from sqlalchemy import inspect, select, text
 
@@ -893,3 +894,111 @@ def test_phase8_clocks_accept_persian_digits_and_never_store_strings(client):
     timeline = client.get("/api/timeline/day", params={"date": "1405/06/28"}).json()
     timed = [row for row in timeline["entries"] if row["kind"] == "task" and row["task_id"] == task.json()["id"]][0]
     assert timed["start"] == "08:00", "ویرایش ساعت در تایم‌لاین دیده می‌شود"
+
+
+# ---------------------------------------------------------------------------
+# Phase 4 (continued) — importing a book outline the student brings themselves
+# ---------------------------------------------------------------------------
+
+SAMPLE_D10_OUTLINE = """فهرست مطالب شیمی ۱ (دهم)
+فصل ۱: کیهان زادگاه الفبای هستی
+• ذرات زیراتمی
+• عدد اتمی و جرمی
+▪ ایزوتوپ‌ها
+فصل ۲: ردپای گازها در زندگی
+• هوا و گازها
+• آزمون چکاپ اول
+• فشار و حجم
+• آزمون جامع پایان کتاب
+"""
+
+
+def _book_id(client, needle: str) -> int:
+    books = client.get("/api/books").json()["books"]
+    return [row for row in books if needle in row["title"]][0]["id"]
+
+
+def test_phase4_outline_parser_agrees_with_the_hand_written_parsers():
+    """The generic reader is the fallback for books the repo never shipped.
+
+    It never invents a node, so on the three real tables of contents it has to
+    land on the same chapters as the hand-written parsers (and on the same number
+    of checkup markers for the chemistry book).
+    """
+    from app.services import outline_import
+
+    hand = {}
+    for parsed_book in seed_content.load_all():
+        counts = seed_content.count_nodes(parsed_book)
+        hand[parsed_book.source_file] = {
+            "chapters": counts["chapters"],
+            "markers": len(parsed_book.markers),
+        }
+
+    for filename, expected in hand.items():
+        text = (pathlib.Path(seed_content.REPO_ROOT) / filename).read_text(encoding="utf-8")
+        generic = outline_import.parse_outline(text)
+        stats = outline_import.outline_stats(generic)
+        assert stats["chapters"] == expected["chapters"], (filename, stats)
+        assert stats["markers"] == expected["markers"], (filename, stats)
+        assert stats["leaves"] >= stats["chapters"], "هر فصل دستِ‌کم یک مبحث دارد"
+        assert not any("هیچ خط «فصل" in warning and stats["chapters"] < 2 for warning in generic.warnings)
+
+
+def test_phase4_outline_import_previews_first_then_only_adds(client):
+    book_id = _book_id(client, "شیمی ۱")
+    before = client.get(f"/api/books/{book_id}/tree").json()
+    assert before["topics"] == [], "کتاب دهم قبل از افزودن فهرست خالی است"
+
+    preview = client.post(f"/api/books/{book_id}/outline", json={"text": SAMPLE_D10_OUTLINE})
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["applied"] is False
+    assert preview.json()["stats"]["chapters"] == 2
+    assert preview.json()["comparison"]["new_titles"] > 0
+    assert client.get(f"/api/books/{book_id}/tree").json()["topics"] == [], "پیش‌نمایش چیزی ذخیره نمی‌کند"
+
+    applied = client.post(f"/api/books/{book_id}/outline", json={"text": SAMPLE_D10_OUTLINE, "apply": True})
+    assert applied.status_code == 200, applied.text
+    body = applied.json()
+    assert body["created"] == body["stats"]["topics"] and body["markers"] == 2
+
+    tree = client.get(f"/api/books/{book_id}/tree").json()
+    chapters = [node for node in tree["topics"] if node["node_type"] == "chapter"]
+    assert len(chapters) == 2 and chapters[0]["title"] == "کیهان زادگاه الفبای هستی"
+    assert [child["title"] for child in chapters[0]["children"]][:2] == ["ذرات زیراتمی", "عدد اتمی و جرمی"]
+    assert [child["title"] for child in chapters[0]["children"][1]["children"]] == ["ایزوتوپ‌ها"]
+    assert "آزمون چکاپ اول" not in [node["title"] for node in tree["topics"]], "چکاپ یک مبحث نیست"
+
+    again = client.post(f"/api/books/{book_id}/outline", json={"text": SAMPLE_D10_OUTLINE, "apply": True})
+    assert again.json()["created"] == 0 and again.json()["reused"] > 0
+    after = client.get(f"/api/books/{book_id}/tree").json()
+    assert len(after["topics"]) == len(tree["topics"]), "افزودن دوباره چیزی را تکرار یا حذف نمی‌کند"
+
+
+def test_phase4_imported_checkup_is_a_coverage_segment(client):
+    book_id = _book_id(client, "شیمی ۱")
+    client.post(f"/api/books/{book_id}/outline", json={"text": SAMPLE_D10_OUTLINE, "apply": True})
+
+    rows = client.get("/api/exam-checkups", params={"book_id": book_id}).json()["checkups"]
+    assert [row["label"] for row in rows] == ["آزمون چکاپ اول", "آزمون جامع پایان کتاب"]
+    checkup = rows[0]
+    assert checkup["kind"] == "checkup"
+    assert checkup["covered_from"] and checkup["covered_to"]
+    assert checkup["included_topic_titles"], "بازهٔ پوشش باید مباحث واقعی همان سگمنت را داشته باشد"
+    assert checkup["topic_count"] == len(checkup["included_topic_titles"])
+    assert rows[1]["scope"] == "chapter"
+
+
+def test_phase4_outline_import_refuses_bad_input_and_never_touches_other_books(client):
+    book_id = _book_id(client, "شیمی ۱")
+    empty = client.post(f"/api/books/{book_id}/outline", json={"text": "   \n", "apply": True})
+    assert empty.status_code == 422 and "خالی" in empty.json()["error"]["message"]
+
+    missing = client.post("/api/books/99999/outline", json={"text": SAMPLE_D10_OUTLINE})
+    assert missing.status_code == 404
+
+    chemistry = _book_id(client, "مبتکران")
+    before = client.get(f"/api/books/{chemistry}/tree").json()
+    client.post(f"/api/books/{book_id}/outline", json={"text": SAMPLE_D10_OUTLINE, "apply": True})
+    after = client.get(f"/api/books/{chemistry}/tree").json()
+    assert len(before["topics"]) == len(after["topics"]), "کتاب دیگری نباید تغییر کند"

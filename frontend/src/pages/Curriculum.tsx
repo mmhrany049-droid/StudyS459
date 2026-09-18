@@ -22,6 +22,10 @@ export default function Curriculum() {
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const [overview, setOverview] = useState<any>(null);
   const [grade, setGrade] = useState<string | null>(null);
+  const [outlineText, setOutlineText] = useState("");
+  const [outlineBusy, setOutlineBusy] = useState(false);
+  const [outlinePreview, setOutlinePreview] = useState<any>(null);
+  const [outlineNotice, setOutlineNotice] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -46,6 +50,52 @@ export default function Curriculum() {
   }, [activeBook]);
 
   const stats = tree?.stats ?? {};
+
+  async function refreshBook() {
+    if (!activeBook) return;
+    setTree(await api.get<TreeResponse>(`/books/${activeBook}/tree`));
+    const fresh = await api.get<{ books: Book[] }>("/books");
+    setBooks(fresh.books);
+  }
+
+  async function previewOutline() {
+    if (!activeBook || !outlineText.trim()) return;
+    setOutlineBusy(true);
+    setOutlineNotice(null);
+    try {
+      setOutlinePreview(await api.post<any>(`/books/${activeBook}/outline`, { text: outlineText }));
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setOutlineBusy(false);
+    }
+  }
+
+  async function applyOutline() {
+    if (!activeBook || !outlineText.trim()) return;
+    setOutlineBusy(true);
+    setOutlineNotice(null);
+    try {
+      const result = await api.post<any>(`/books/${activeBook}/outline`, { text: outlineText, apply: true });
+      setOutlineNotice(
+        `${toPersianDigits(result.created)} مبحث اضافه شد؛ ${toPersianDigits(result.reused)} مورد از قبل بود و دست‌نخورده ماند. ` +
+          (result.markers ? `${toPersianDigits(result.markers)} آزمون چکاپ/جامع هم به بازه‌های پوشش اضافه شد.` : ""),
+      );
+      setOutlinePreview(null);
+      await refreshBook();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setOutlineBusy(false);
+    }
+  }
+
+  async function pickOutlineFile(file: File) {
+    const text = await file.text();
+    setOutlineText(text);
+    setOutlinePreview(null);
+    setOutlineNotice(`فایل «${file.name}» خوانده شد؛ اول پیش‌نمایش بگیر، بعد اضافه کن.`);
+  }
 
   const flatCount = useMemo(() => {
     function count(nodes: TopicNode[]): number {
@@ -199,6 +249,70 @@ export default function Curriculum() {
       </div>
 
       <div className="grid gap-5">
+        <Card title="فهرست کتاب (فصل‌ها)">
+          <p className="muted text-xs leading-6">
+            فصل‌های کتابی که در برنامه نیست را اینجا اضافه کن: متن فهرست کتاب را بچسبان یا فایل متنی (UTF-8) را انتخاب کن.
+            اول پیش‌نمایش را ببین؛ فقط «افزودن» انجام می‌شود و هیچ مبحثی پاک، جابه‌جا یا تغییرنام نمی‌شود.
+          </p>
+          <input
+            type="file"
+            accept=".txt,text/plain"
+            className="mt-3 text-xs"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void pickOutlineFile(file);
+            }}
+          />
+          <textarea
+            className="input mt-2 min-h-[130px] font-mono text-xs"
+            placeholder={"فصل ۱: ...\n• مبحث اول\n• آزمون چکاپ اول\nفصل ۲: ..."}
+            value={outlineText}
+            onChange={(event) => {
+              setOutlineText(event.target.value);
+              setOutlinePreview(null);
+            }}
+          />
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button className="btn-ghost btn-xs" disabled={!outlineText.trim() || outlineBusy} onClick={() => void previewOutline()}>
+              پیش‌نمایش
+            </button>
+            <button className="btn-primary btn-xs" disabled={!outlineText.trim() || outlineBusy} onClick={() => void applyOutline()}>
+              افزودن به کتاب
+            </button>
+          </div>
+          {outlineNotice && <div className="mt-3 rounded-xl bg-brand-50 p-3 text-xs text-brand-700">{outlineNotice}</div>}
+          {outlinePreview && (
+            <div className="mt-3 grid gap-2 text-xs">
+              <div className="flex flex-wrap gap-2">
+                <Badge>فصل {toPersianDigits(outlinePreview.stats.chapters)}</Badge>
+                <Badge>بخش {toPersianDigits(outlinePreview.stats.sections)}</Badge>
+                <Badge>زیربخش {toPersianDigits(outlinePreview.stats.subsections)}</Badge>
+                {outlinePreview.stats.markers > 0 && (
+                  <Badge tone="warn">چکاپ/جامع {toPersianDigits(outlinePreview.stats.markers)}</Badge>
+                )}
+              </div>
+              <p className="muted">
+                مبحث جدید: {toPersianDigits(outlinePreview.comparison.new_titles)} · از قبل موجود:{" "}
+                {toPersianDigits(outlinePreview.comparison.already_present)}
+              </p>
+              <ul className="grid gap-1 text-ink-600">
+                {(outlinePreview.sample ?? []).map((row: any, index: number) => (
+                  <li key={index} style={{ paddingInlineStart: `${(row.depth ?? 0) * 12}px` }}>
+                    <span className="muted">{NODE_LABEL[row.node_type] ?? ""} · </span>
+                    {row.title}
+                  </li>
+                ))}
+              </ul>
+              {(outlinePreview.warnings ?? []).map((warning: string, index: number) => (
+                <p key={index} className="rounded-lg bg-warn-50 p-2 text-warn-700">
+                  {warning}
+                </p>
+              ))}
+              <p className="muted">{outlinePreview.policy}</p>
+            </div>
+          )}
+        </Card>
+
         <Card title="وضعیت این کتاب">
           <div className="grid gap-3">
             <Stat label="مباحث" value={toPersianDigits(stats.topic_count ?? 0)} />

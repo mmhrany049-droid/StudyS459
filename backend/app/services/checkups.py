@@ -50,19 +50,90 @@ def ensure_coverage_seeded(db: Session, book: Optional[models.Book] = None) -> d
     for topic in topics:
         by_title.setdefault(topic.title.strip(), topic)
 
+    result = seed_coverages_from_markers(db, book, parsed_book.markers, source_file=parsed_book.source_file)
+    return {
+        "created": result["created"],
+        "skipped": result["skipped"],
+        "book_id": book.id,
+        "note": "چکاپ‌ها به‌صورت بازهٔ پوشش ذخیره می‌شوند؛ نه یک مبحث تکی.",
+    }
+
+
+def seed_coverages_from_markers(
+    db: Session,
+    book: models.Book,
+    markers,
+    *,
+    source_file: Optional[str] = None,
+) -> dict:
+    """Turn «آزمون چکاپ/جامع» markers into coverage ranges for *any* book.
+
+    Used both by the seeded chemistry book and by an outline the student imported,
+    so a checkup is always a segment («از سگمنت قبلی تا قبل چکاپ فعلی») and never a
+    single topic. Additive and idempotent by ``order_index``.
+    """
+    topics = list(db.scalars(select(models.Topic).where(models.Topic.book_id == book.id).order_by(models.Topic.id)))
+    by_title: dict[str, models.Topic] = {}
+    for topic in topics:
+        if topic.is_leaf:
+            by_title.setdefault(topic.title.strip(), topic)
+    for topic in topics:  # parents may still be the only match for older files
+        by_title.setdefault(topic.title.strip(), topic)
+
     created = skipped = 0
     previous_by_chapter: dict[str, models.CheckupCoverage] = {}
-    for index, marker in enumerate(parsed_book.markers, start=1):
-        exists = db.scalars(
-            select(models.CheckupCoverage).where(
-                models.CheckupCoverage.book_id == book.id, models.CheckupCoverage.order_index == index
-            )
-        ).first()
+    ordered = list(db.scalars(
+        select(models.CheckupCoverage).where(models.CheckupCoverage.book_id == book.id).order_by(models.CheckupCoverage.order_index)
+    ))
+    for existing in ordered:
+        previous_by_chapter[existing.chapter_title or ""] = existing
+
+    for index, marker in enumerate(markers, start=1):
+        exists = next((row for row in ordered if row.order_index == index), None)
         if exists:
             skipped += 1
             previous_by_chapter[marker.chapter_title or ""] = exists
             continue
-        included = [by_title[title.strip()] for title in marker.included_topics if title.strip() in by_title]
+        included = [by_title[title.strip()] for title in (getattr(marker, "included_topics", None) or []) if title.strip() in by_title]
+        derived_from = None
+        if not included:
+            # An imported outline marks the end of the segment («آخرین مبحث قبل از
+            # چکاپ») instead of listing every topic, so the range is read from the
+            # real tree: از بعد از عنوان فصل تا همان مبحث.
+            chapter_titles = {topic.title.strip() for topic in topics if topic.node_type == "chapter"}
+            chapter_title = (marker.chapter_title or "").strip()
+            end_title = str(getattr(marker, "covered_to", None) or "").strip()
+            start = 0
+            if chapter_title:
+                start = next(
+                    (index for index, topic in enumerate(topics) if topic.title.strip() == chapter_title), 0
+                )
+            end = None
+            if end_title:
+                end = next(
+                    (
+                        index
+                        for index, topic in enumerate(topics)
+                        if index > start and topic.title.strip() == end_title
+                    ),
+                    None,
+                )
+            if marker.kind == "comprehensive" and chapter_title:
+                # «آزمون جامع» پوشش کل فصل است، نه یک سگمنت
+                stop = next(
+                    (
+                        index
+                        for index, topic in enumerate(topics)
+                        if index > start and topic.title.strip() in chapter_titles
+                    ),
+                    len(topics),
+                )
+                segment = topics[start + 1: stop]
+            else:
+                segment = topics[start + 1: end + 1] if end is not None else topics[start + 1: start + 1]
+            included = [topic for topic in segment if topic.is_leaf or topic.title.strip() not in chapter_titles]
+            if included:
+                derived_from = included[0].title
         chapter_topic = next(
             (
                 topic
@@ -81,15 +152,15 @@ def ensure_coverage_seeded(db: Session, book: Optional[models.Book] = None) -> d
             kind=marker.kind,
             label=marker.label,
             order_index=index,
-            scope=marker.scope,
-            covered_from=marker.covered_from,
-            covered_to=marker.covered_to,
+            scope=("chapter" if getattr(marker, "kind", "checkup") == "comprehensive" and derived_from is not None else getattr(marker, "scope", "segment")),
+            covered_from=getattr(marker, "covered_from", None) or derived_from,
+            covered_to=getattr(marker, "covered_to", None),
             included_topic_ids=[topic.id for topic in included],
             included_topic_titles=[topic.title for topic in included],
             previous_checkup_id=(previous_by_chapter.get(marker.chapter_title or "") or None).id
             if previous_by_chapter.get(marker.chapter_title or "")
             else None,
-            source_file=parsed_book.source_file,
+            source_file=source_file,
         )
         db.add(row)
         db.flush()

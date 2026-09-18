@@ -42,6 +42,52 @@ class MappingPayload(BaseModel):
     reason: str | None = None
 
 
+class OutlinePayload(BaseModel):
+    text: str
+    apply: bool = False
+    filename: str | None = None
+
+
+@router.post("/books/{book_id}/outline")
+def import_outline(
+    book_id: int,
+    payload: OutlinePayload,
+    user: models.User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """فهرست یک کتاب را میخواند: پیشفرض فقط پیشنمایش، با ``apply`` افزودنی.
+
+    This is how دهم/دوازدهم books get their chapters: the student pastes (or
+    uploads) the real table of contents — nothing is invented, nothing is deleted.
+    """
+    from ...services import outline_import
+
+    if not payload.apply:
+        return outline_import.preview(db, book_id, payload.text)
+    result = outline_import.apply_outline(db, user, book_id, payload.text)
+    if payload.filename:
+        result["filename"] = payload.filename
+    db.commit()
+    return result
+
+
+@router.get("/books/{book_id}/outline-status")
+def outline_status(book_id: int, db: Session = Depends(get_db)) -> dict:
+    from ...services import outline_import
+
+    book = db.get(models.Book, book_id)
+    if not book:
+        from ...core.errors import NotFoundError
+
+        raise NotFoundError("کتاب پیدا نشد.")
+    return {
+        "book": {"id": book.id, "title": book.title, "grade": book.grade},
+        "tree": outline_import.tree_size(db, book_id),
+        "hierarchy_note": book.hierarchy_note,
+        "how": "متن فهرست کتاب را در همین صفحه بچسبان (یا فایل متنی را بارگذاری کن)؛ ابتدا پیش‌نمایش را ببین و بعد اعمال کن.",
+    }
+
+
 @router.get("/curriculum/overview")
 def overview(user: models.User = Depends(current_user), db: Session = Depends(get_db)) -> dict:
     """Grades ۱۰–۱۲ with the visible/plannable split (V3.1 doc 04)."""
