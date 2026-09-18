@@ -70,6 +70,8 @@ PARAMS: Dict[str, Param] = {
     # Calendar
     # ------------------------------------------------------------------
     "calendar.week_start": _p("شنبه", V2_C, USER_SPECIFIC, "Iranian week starts on Saturday"),
+    # V3.1 doc 06: categories/scheduling types are registries too (activities ≠ study tasks)
+    "activities.custom_categories": _p([], V3_1, USER_SPECIFIC, "دسته‌های سفارشی فعالیت ({code,label,blocks})"),
     # V3.1 doc 06: task types are a registry; students/extensions add their own here
     "tasks.custom_types": _p([], V3_1, USER_SPECIFIC, "انواع کار مطالعهٔ سفارشی (فهرست {code,label,family,needs_questions})"),
     # V3.1 doc 07 — purposeful questioning: every answer moves a parameter a little

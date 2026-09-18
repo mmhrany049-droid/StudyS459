@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from ...core.timeutil import today_local, week_end, week_label_fa, week_start
 from ...db import models
 from ...db.base import get_db
-from ...domain.enums import ACTIVITY_LABELS_FA
+from ...domain import activity_types as activity_registry
 from ...services import (
     capacity as capacity_service,
     common,
@@ -306,6 +306,7 @@ def list_activities(
                 "id": row.id,
                 "title": row.title,
                 "category": row.category,
+                "category_label": activity_registry.category_label(row.category),
                 "scheduling_type": row.scheduling_type,
                 "date": common.jdate(row.date),
                 "day_of_week": row.day_of_week,
@@ -320,10 +321,9 @@ def list_activities(
             }
             for row in rows
         ],
-        "policy": "فعالیت‌ها زمان را اشغال می‌کنند و هرگز «کار مطالعه انجام‌نشده» حساب نمی‌شوند.",
-        "categories": [
-            {"value": key.value, "label": ACTIVITY_LABELS_FA[key]} for key in ACTIVITY_LABELS_FA
-        ],
+        "policy": activity_registry.payload()["policy"],
+        "categories": activity_registry.list_categories(),
+        "scheduling_types": activity_registry.payload()["scheduling_types"],
     }
 
 
@@ -350,8 +350,16 @@ def create_activity(
 
         return _dt.time.fromisoformat(value)
 
-    if payload.scheduling_type not in {"fixed", "preferred", "flexible", "deadline_only"}:
-        raise ValidationError("نوع زمان‌بندی نامعتبر است.")
+    if not activity_registry.is_valid_scheduling(payload.scheduling_type):
+        raise ValidationError(
+            "نوع زمان‌بندی نامعتبر است.",
+            details={"reason": "unknown_scheduling_type", "choices": sorted(activity_registry.SCHEDULING_TYPES)},
+        )
+    if not activity_registry.is_valid_category(payload.category):
+        raise ValidationError(
+            "دستهٔ فعالیت شناخته نشد.",
+            details={"reason": "unknown_category", "choices": sorted(activity_registry.categories())},
+        )
     if payload.recurring and payload.day_of_week is None:
         raise ValidationError("برای فعالیت تکرارشونده، روز هفته لازم است.")
     activity = models.Activity(
@@ -372,7 +380,15 @@ def create_activity(
     db.flush()
     common.audit(db, "activity_created", user_id=user.id, entity_type="activity", entity_id=activity.id, after={"title": activity.title})
     db.commit()
-    return {"id": activity.id, "title": activity.title}
+    return {
+        "id": activity.id,
+        "title": activity.title,
+        "category": activity.category,
+        "category_label": activity_registry.category_label(activity.category),
+        "scheduling_type": activity.scheduling_type,
+        "scheduling_label": activity_registry.SCHEDULING_TYPES[activity.scheduling_type]["label"],
+        "policy": activity_registry.payload()["policy"],
+    }
 
 
 @router.delete("/activities/{activity_id}")
@@ -385,6 +401,12 @@ def delete_activity(activity_id: int, user: models.User = Depends(current_user),
     activity.active = False
     db.commit()
     return {"id": activity_id, "active": False}
+
+
+@router.get("/activities/types")
+def activity_types() -> dict:
+    """Categories and scheduling types are data, not a hard-coded list in the engine."""
+    return activity_registry.payload()
 
 
 @router.get("/classes")

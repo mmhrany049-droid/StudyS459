@@ -10,7 +10,7 @@ phase can be reported and verified independently:
 * Phase 5 — Jalali calendar 1405–1408
 * Phase 6 — extensible study-task types
 * Phase 7 — purposeful questioning wired to capacity/planner
-* Phase 8 — dashboard/UX surface
+* Phase 8 — dashboard/UX surface + activity registry (doc 06/08)
 """
 
 from __future__ import annotations
@@ -627,3 +627,102 @@ def test_phase7_preferences_only_reorder_with_enough_evidence(client, db, user):
     assert ordered[0]["intervention_type"] == "EASY_PRACTICE", "امتیاز بالاتر مقدم است؛ ترجیح قفل نمی‌کند"
     assert [item["intervention_type"] for item in ordered[1:]] == ["DIFFICULT_PRACTICE", "READ_LESSON"]
     assert note and "هم‌امتیاز" in note
+
+
+# ---------------------------------------------------------------------------
+# Phase 8 — dashboard / UX surface and the activity side of doc 06
+# ---------------------------------------------------------------------------
+
+
+def test_phase8_today_brief_follows_doc08_order(client):
+    payload = client.get("/api/dashboard").json()
+    brief = payload["today_brief"]
+    for key in (
+        "greeting",
+        "date",
+        "date_long",
+        "weekday",
+        "is_holiday",
+        "important_tasks",
+        "important_count",
+        "priority",
+        "nearest_exam",
+        "next_action",
+    ):
+        assert key in brief, key
+    assert brief["greeting"].startswith("سلام")
+    assert brief["date"].startswith("۱۴۰۵/") or brief["date"].startswith("۱۴۰۶/")
+    assert len(brief["important_tasks"]) <= 3, "سند: ۳ کار مهم"
+    assert brief["next_action"]["kind"] in {"task", "topic", "exam", "none"}
+    assert brief["next_action"]["reason"], "پیشنهاد بعدی همیشه دلیل دارد"
+
+    exam = client.post(
+        "/api/exams", json={"title": "امتحان نزدیک", "exam_type": "school", "date": "1405/07/02"}
+    ).json()
+    brief = client.get("/api/dashboard").json()["today_brief"]
+    assert brief["nearest_exam"]["title"] == "امتحان نزدیک"
+    assert brief["nearest_exam"]["days_left"] > 0
+    assert brief["nearest_exam"]["readiness"]["value"] is None
+    assert brief["nearest_exam"]["readiness"]["evidence"]
+    assert brief["nearest_exam"]["next_action"]["kind"] == "mark_topics", "بدون مبحث علامت‌خورده، آمادگی ساخته نمی‌شود"
+    assert brief["next_action"]["kind"] == "exam"
+
+    detail = client.get(f"/api/exams/{exam['id']}").json()
+    assert detail["readiness"]["value"] is None and detail["next_action"]["kind"] == "mark_topics"
+
+
+def test_phase8_planner_week_is_a_jalali_calendar(client):
+    week = client.get("/api/planning/week").json()
+    calendar = week["calendar"]
+    assert len(calendar["days"]) == 7
+    assert calendar["days"][0]["weekday"] == "شنبه"
+    assert calendar["days"][-1]["weekday"] == "جمعه"
+    assert calendar["note"]
+    from app.core.jalali import weekday_index_fa
+
+    for row in calendar["days"]:
+        assert 1 <= row["jalali"]["month"] <= 12
+        assert row["event_count"] >= 0
+        assert "holiday_titles" in row
+    for day in week["days"]:
+        assert {"jalali", "is_holiday", "holiday_titles", "events"} <= set(day["calendar"].keys())
+
+    client.post("/api/exams", json={"title": "آزمون تقویمی", "exam_type": "school", "date": calendar["days"][2]["date"]})
+    refreshed = client.get("/api/planning/week").json()
+    target = refreshed["calendar"]["days"][2]
+    assert target["event_count"] >= 1, "آزمون ثبت‌شده در تقویم هفته دیده می‌شود"
+
+
+def test_phase8_activity_registry_is_extensible_and_separate_from_tasks(client):
+    registry = client.get("/api/activities/types").json()
+    codes = [item["code"] for item in registry["categories"]]
+    assert {"gym", "class", "rest", "other"} <= set(codes)
+    assert [item["code"] for item in registry["scheduling_types"]] == [
+        "fixed",
+        "preferred",
+        "flexible",
+        "deadline_only",
+    ]
+    assert registry["custom_count"] == 0
+    assert "هرگز «کار مطالعهٔ انجام‌نشده»" in registry["policy"]
+
+    created = client.post(
+        "/api/activities",
+        json={"title": "باشگاه", "category": "gym", "scheduling_type": "fixed", "day_of_week": 1},
+    )
+    assert created.status_code == 200, created.text
+    assert created.json()["category_label"] == "باشگاه"
+    assert created.json()["scheduling_label"] == "ثابت"
+
+    listing = client.get("/api/activities").json()
+    assert listing["activities"][0]["category_label"] == "باشگاه"
+    assert listing["policy"] == registry["policy"]
+
+    bad_category = client.post("/api/activities", json={"title": "x", "category": "طالع‌بینی"})
+    assert bad_category.status_code == 422
+    bad_schedule = client.post("/api/activities", json={"title": "x", "scheduling_type": "هر وقت شد"})
+    assert bad_schedule.status_code == 422
+    assert bad_schedule.json()["error"]["details"]["reason"] == "unknown_scheduling_type"
+
+    version = client.get("/api/health").json()
+    assert version["model_version"] == "v3.1.0", "نسخهٔ مدل با ارتقا جلو می‌رود"

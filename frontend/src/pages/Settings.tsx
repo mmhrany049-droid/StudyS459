@@ -29,14 +29,39 @@ export default function Settings() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [telegram, setTelegram] = useState<any>(null);
+  const [activities, setActivities] = useState<any>(null);
+  const [draft, setDraft] = useState({ title: "", category: "other", scheduling_type: "fixed", start_time: "", duration_minutes: "" });
 
   function load() {
     setError(null);
     api.get<any>("/me").then(setMe).catch((err) => setError(err.message));
     api.get<any>("/config/params").then(setParams).catch(() => undefined);
     api.get<any>("/integrations/telegram").then(setTelegram).catch(() => undefined);
+    api.get<any>("/activities").then(setActivities).catch(() => undefined);
   }
   useEffect(load, []);
+
+  async function addActivity() {
+    if (!draft.title.trim()) {
+      setNotice("عنوان فعالیت را بنویس.");
+      return;
+    }
+    try {
+      const created = await api.post<any>("/activities", {
+        title: draft.title.trim(),
+        category: draft.category,
+        scheduling_type: draft.scheduling_type,
+        start_time: draft.start_time || undefined,
+        duration_minutes: draft.duration_minutes ? Number(draft.duration_minutes) : undefined,
+        date: me.today,
+      });
+      setNotice(`فعالیت «${created.title}» ثبت شد؛ از ظرفیت کم می‌کند و کار عقب‌افتاده حساب نمی‌شود.`);
+      setDraft({ ...draft, title: "", duration_minutes: "" });
+      load();
+    } catch (err: any) {
+      setNotice(err.message);
+    }
+  }
 
   async function saveMe(patch: Record<string, unknown>) {
     await api.patch("/me", patch);
@@ -154,6 +179,84 @@ export default function Settings() {
             </>
           ) : (
             <p className="muted">وضعیت تلگرام در دسترس نیست.</p>
+          )}
+        </Card>
+
+        <Card title="فعالیت‌های زمان‌بر (با کار مطالعه قاطی نمی‌شوند)">
+          {activities ? (
+            <>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <select className="input" value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value })}>
+                  {(activities.categories ?? []).map((item: any) => (
+                    <option key={item.code} value={item.code}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className="input"
+                  value={draft.scheduling_type}
+                  onChange={(event) => setDraft({ ...draft, scheduling_type: event.target.value })}
+                >
+                  {(activities.scheduling_types ?? []).map((item: any) => (
+                    <option key={item.code} value={item.code}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  className="input"
+                  placeholder="عنوان فعالیت"
+                  value={draft.title}
+                  onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+                />
+              </div>
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                <input
+                  className="input"
+                  placeholder="ساعت شروع (اختیاری)"
+                  value={draft.start_time}
+                  onChange={(event) => setDraft({ ...draft, start_time: event.target.value })}
+                />
+                <input
+                  className="input"
+                  inputMode="numeric"
+                  placeholder="مدت (دقیقه)"
+                  value={draft.duration_minutes}
+                  onChange={(event) => setDraft({ ...draft, duration_minutes: event.target.value.replace(/[^0-9]/g, "") })}
+                />
+                <button className="btn-primary btn-xs" onClick={addActivity}>
+                  افزودن فعالیت
+                </button>
+              </div>
+              <p className="muted mt-2">
+                {activities.scheduling_types?.find((item: any) => item.code === draft.scheduling_type)?.hint}
+              </p>
+              {(activities.activities ?? []).length > 0 && (
+                <ul className="mt-3 grid gap-1 text-xs">
+                  {(activities.activities ?? []).slice(0, 6).map((item: any) => (
+                    <li key={item.id} className="flex items-center justify-between rounded-lg bg-ink-50 px-2 py-1">
+                      <span>
+                        {item.title} — {item.category_label}
+                      </span>
+                      <span className="muted">
+                        {item.scheduling_type === "fixed"
+                          ? "ثابت"
+                          : item.scheduling_type === "preferred"
+                            ? "ترجیحی"
+                            : item.scheduling_type === "flexible"
+                              ? "انعطاف‌پذیر"
+                              : "فقط مهلت"}
+                        {item.duration_minutes ? ` · ${toPersianDigits(item.duration_minutes)}′` : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="muted mt-2">{activities.policy}</p>
+            </>
+          ) : (
+            <p className="muted">در حال بارگذاری…</p>
           )}
         </Card>
 
