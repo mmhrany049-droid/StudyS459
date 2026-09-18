@@ -419,6 +419,11 @@ def exam_payload(db: Session, exam: models.Exam, *, detailed: bool = False) -> d
         "files": exam.files or [],
         "notes": exam.notes,
     }
+    if days_left >= 0:
+        # V3.1 doc 08: the home screen and the Exam Center both show «وضعیت آمادگی»
+        # for upcoming exams — one calculation, exposed once.
+        payload["readiness"] = _readiness(db, exam)
+        payload["next_action"] = _next_action_for(db, exam, payload["readiness"])
     if detailed:
         payload["topics"] = exam_topics(db, exam.id)
         payload["attempts"] = [
@@ -718,6 +723,34 @@ def post_analysis(db: Session, user: models.User, exam_id: int) -> dict:
             }
         ] if total_questions and total_unanswered / total_questions > 0.2 else [],
         "next_actions": _next_actions(db, user, exam, breakdown),
+    }
+
+
+def _next_action_for(db: Session, exam: models.Exam, readiness: dict) -> dict:
+    """The single honest next step for an upcoming exam (used on the home screen)."""
+    value = readiness.get("value")
+    if not readiness.get("topic_count"):
+        return {
+            "kind": "mark_topics",
+            "title": "مباحث این امتحان را علامت بزن",
+            "why": "تا مبحثی علامت نخورد، آمادگی قابل محاسبه نیست و اولویت الکی ساخته نمی‌شود.",
+        }
+    if value is None:
+        return {
+            "kind": "quiet_test",
+            "title": "یک تمرین کوتاه از مباحث امتحان",
+            "why": "مبحث علامت خورده اما شاهد کافی برای تخمین آمادگی نداریم؛ یک تمرین کوتاه این فاصله را پر می‌کند.",
+        }
+    if value < 0.5:
+        return {
+            "kind": "practice",
+            "title": "تمرین متمرکز روی ضعیف‌ترین مباحث امتحان",
+            "why": f"آمادگی تخمینی {round(value * 100)}٪ است و شاهد کافی هم داریم.",
+        }
+    return {
+        "kind": "review",
+        "title": "مرور نگه‌دارنده تا روز امتحان",
+        "why": f"آمادگی تخمینی {round(value * 100)}٪ است؛ کار اصلی این است که از دست نرود.",
     }
 
 

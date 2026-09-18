@@ -35,6 +35,7 @@ const NAV = [
 ];
 
 type Bootstrap = {
+  model_version?: string;
   date_long?: string;
   week_label?: string;
   user?: { display_name?: string };
@@ -99,7 +100,7 @@ export default function App() {
           </nav>
           <div className="order-2 flex items-center gap-2 lg:order-3">
             <span className="badge-muted">
-              نسخه {toPersianDigits("3.0.0")}
+              نسخه {toPersianDigits(boot.model_version?.replace(/^v/, "") ?? "3.1.0")}
             </span>
           </div>
         </div>

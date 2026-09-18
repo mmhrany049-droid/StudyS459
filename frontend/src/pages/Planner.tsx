@@ -258,6 +258,38 @@ export default function Planner() {
           </section>
         </Card>
 
+        <Card
+          title="تقویم هفته"
+          action={<span className="muted">{week?.calendar ? `${week.calendar.from_long} تا ${week.calendar.to_long}` : ""}</span>}
+        >
+          {!week?.calendar ? (
+            <p className="muted">تقویم هفته در حال بارگذاری است…</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-7 gap-1">
+                {week.calendar.days.map((row: any) => (
+                  <div
+                    key={row.date}
+                    className={`rounded-xl border p-2 text-center text-[11px] ${
+                      row.is_holiday ? "border-bad-200 bg-bad-50" : "border-ink-200 bg-white"
+                    }`}
+                  >
+                    <div className="font-medium">{row.weekday}</div>
+                    <div className="num">{toPersianDigits(row.jalali.day)}</div>
+                    <div className="muted">{row.jalali.month}</div>
+                    <div className="mt-1 flex flex-col items-center gap-0.5">
+                      {row.event_count > 0 && <span className="badge-muted">{toPersianDigits(row.event_count)} رویداد</span>}
+                      {row.planned_minutes > 0 && <span className="muted">{toPersianDigits(row.planned_minutes)}′</span>}
+                      {row.holiday_titles?.length > 0 && <span className="text-[10px] text-bad-600">تعطیل</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="muted mt-2">{week.calendar.note}</p>
+            </>
+          )}
+        </Card>
+
         <Card title="برنامه هفته">
           {!week || (week.days ?? []).every((day: any) => (day.tasks ?? []).length === 0) ? (
             <Empty title="هنوز برنامه‌ای ساخته نشده" hint="با «ساخت برنامه هفته» کارها روی روزها پخش می‌شوند." />
@@ -269,6 +301,12 @@ export default function Planner() {
                     <div>
                       <span className="text-sm font-medium">{day.date_long}</span>
                       {day.over_capacity && <span className="badge-warn mr-2">بیش از ظرفیت</span>}
+                      {day.calendar?.is_holiday && (
+                        <span className="badge-muted mr-2">{day.calendar.holiday_titles?.[0] ?? "تعطیل"}</span>
+                      )}
+                      {day.calendar?.events?.some((event: any) => event.kind === "exam") && (
+                        <span className="badge-warn mr-2">آزمون</span>
+                      )}
                     </div>
                     <span className="muted">
                       برنامه‌ریزی‌شده {minutes(day.capacity?.planned_minutes)} / ظرفیت واقع‌بینانه{" "}

@@ -616,6 +616,41 @@ def week_view(week: Optional[str] = None, user: models.User = Depends(current_us
     payload["week_label"] = week_label_fa(start)
     payload["capacity"] = capacity_service.week_capacity(db, user, start)
     payload["midweek"] = planner.midweek_check(db, user, reference=reference)
+    # V3.1 doc 08: the planner is a *calendar* — Jalali dates, holidays and exams,
+    # read from the calendar engine instead of being recomputed in the UI.
+    from ...services import calendar_service
+
+    calendar_week = calendar_service.week_view(db, user, start)
+    by_date = {row["date"]: row for row in calendar_week["days"]}
+    for day in payload.get("days", []):
+        info = by_date.get(day["date"]) or {}
+        day["calendar"] = {
+            "jalali": info.get("jalali"),
+            "month_title": info.get("month_title"),
+            "is_holiday": info.get("is_holiday"),
+            "holiday_titles": info.get("holiday_titles", []),
+            "events": info.get("events", []),
+            "planned_minutes": info.get("planned_minutes"),
+        }
+    payload["calendar"] = {
+        "from": calendar_week["from"],
+        "to": calendar_week["to"],
+        "from_long": calendar_week["from_long"],
+        "to_long": calendar_week["to_long"],
+        "days": [
+            {
+                "date": row["date"],
+                "weekday": row["weekday"],
+                "jalali": row["jalali"],
+                "is_holiday": row["is_holiday"],
+                "holiday_titles": row["holiday_titles"],
+                "event_count": len(row["events"]),
+                "planned_minutes": row["planned_minutes"],
+            }
+            for row in calendar_week["days"]
+        ],
+        "note": "هفته از شنبه تا جمعه؛ تعطیلات و رویدادها از موتور تقویم می‌آیند.",
+    }
     db.commit()
     return payload
 

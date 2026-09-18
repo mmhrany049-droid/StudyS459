@@ -87,8 +87,106 @@ def dashboard(db: Session, user: models.User) -> dict:
             "end_questions": behaviour.daily_questionnaire("end") if not _checkin_done(db, user, today, "end") else [],
             "state": behaviour.current_state(db, user),
         },
+        "today_brief": _today_brief(db, user, today, day_payload),
         "empty_state": _empty_state(db, user),
         "generated_at": common.jdatetime(now_utc()),
+    }
+
+
+def _today_brief(db: Session, user: models.User, today: _dt.date, day_payload: dict) -> dict:
+    """V3.1 doc 08 — the home screen answers, in order:
+
+    سلام → امروز → ۳ کار مهم → اولویت → آزمون نزدیک → وضعیت آمادگی → پیشنهاد بعدی.
+    Everything here is read from the engines; nothing is recomputed or invented.
+    """
+    from . import calendar_service, exams as exams_service
+
+    tasks = list(day_payload.get("tasks") or [])
+    open_tasks = [task for task in tasks if task.get("status") not in {"completed", "skipped", "cancelled"}]
+    important = sorted(
+        open_tasks,
+        key=lambda task: (
+            -float(task.get("priority_score") or 0.0),
+            task.get("planned_start_time") or "99:99",
+            task.get("id") or 0,
+        ),
+    )[:3]
+
+    exams = exams_service.upcoming_exams(db, user, days=30)
+    nearest = exams[0] if exams else None
+    nearest_brief = None
+    if nearest:
+        # readiness already travels with the upcoming payload (coverage+accuracy of
+        # the marked topics, with the sample size behind it) — never recomputed here.
+        nearest_brief = {
+            "id": nearest.get("id"),
+            "title": nearest.get("title"),
+            "date": nearest.get("date"),
+            "days_left": nearest.get("days_left"),
+            "exam_type": nearest.get("exam_type"),
+            "type_label": nearest.get("type_label"),
+            "question_count": nearest.get("question_count"),
+            "answer_key_count": nearest.get("answer_key_count"),
+            "readiness": nearest.get("readiness"),
+            "next_action": nearest.get("next_action"),
+        }
+
+    priorities = priority.compute_priorities(db, user, horizon="week", day=today, limit=1)
+    top_priority = None
+    if priorities:
+        top = priorities[0]
+        top_priority = {
+            "topic_id": top["topic_id"],
+            "topic_title": top.get("topic_title"),
+            "score": top["score"],
+            "confidence": top.get("confidence"),
+            "reason": (top.get("top_reasons") or [{}])[0].get("human_text")
+            or (top.get("top_reasons") or [{}])[0].get("label"),
+        }
+
+    if important:
+        nxt = {
+            "kind": "task",
+            "title": important[0].get("title"),
+            "route": "#/",
+            "reason": "کار امروز با بیشترین اهمیت؛ انجام‌نشده باقی مانده است.",
+        }
+    elif top_priority:
+        nxt = {
+            "kind": "topic",
+            "title": top_priority["topic_title"],
+            "route": "#/sheet",
+            "reason": top_priority["reason"] or "بالاترین اولویت محاسبه‌شده برای این هفته.",
+        }
+    elif nearest_brief:
+        nxt = {
+            "kind": "exam",
+            "title": f"آماده‌سازی {nearest_brief['title']}",
+            "route": "#/exams",
+            "reason": "امتحان نزدیک ثبت شده و کاری برای امروز برنامه‌ریزی نشده است.",
+        }
+    else:
+        nxt = {
+            "kind": "none",
+            "title": "هنوز داده‌ای برای پیشنهاد نیست",
+            "route": "#/curriculum",
+            "reason": "با تیک «تدریس‌شده»، بانک تست و ثبت یک امتحان، پیشنهادها ساخته می‌شوند.",
+        }
+
+    day_info = calendar_service.day_view(db, user, common.jdate(today))
+    return {
+        "greeting": f"سلام {user.display_name or 'دانش‌آموز'}",
+        "date": common.jdate(today),
+        "date_long": common.jdate_long(today),
+        "weekday": common.weekday_fa(today),
+        "is_holiday": day_info["is_holiday"],
+        "holiday_titles": day_info["holiday_titles"],
+        "important_tasks": important,
+        "important_count": len(open_tasks),
+        "priority": top_priority,
+        "nearest_exam": nearest_brief,
+        "next_action": nxt,
+        "note": "این صفحه فقط نمایش می‌دهد؛ هر عدد از موتور خودش می‌آید و توضیحش همراه آن است.",
     }
 
 

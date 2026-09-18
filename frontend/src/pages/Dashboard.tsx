@@ -133,10 +133,77 @@ export default function Dashboard() {
   const habits = data.habits as any;
   const midweek = data.midweek as any;
   const checkin = data.checkin as any;
+  const brief = (data as any).today_brief as any;
 
   return (
     <div className="grid gap-5 lg:grid-cols-3">
       <div className="grid gap-5 lg:col-span-2">
+        {brief && (
+          <Card
+            title={
+              <span>
+                امروز — {brief.greeting}
+                {brief.is_holiday && <span className="badge-warn mr-2">تعطیل</span>}
+              </span>
+            }
+            action={<span className="muted">{brief.date_long}</span>}
+          >
+            {brief.holiday_titles?.length > 0 && (
+              <p className="mb-3 rounded-xl bg-bad-50 p-2 text-xs text-bad-600">{brief.holiday_titles.join("، ")}</p>
+            )}
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl bg-ink-50 p-3">
+                <div className="text-xs text-ink-600">کار مهم امروز</div>
+                <div className="num mt-1 text-lg font-semibold">{toPersianDigits(brief.important_count ?? 0)}</div>
+                <div className="muted mt-1">
+                  از این‌ها {toPersianDigits((brief.important_tasks ?? []).length)} مورد در صدر فهرست است.
+                </div>
+              </div>
+              <div className="rounded-xl bg-ink-50 p-3">
+                <div className="text-xs text-ink-600">اولویت اول</div>
+                <div className="mt-1 text-sm font-semibold">{brief.priority?.topic_title ?? "هنوز مشخص نیست"}</div>
+                <div className="muted mt-1">
+                  {brief.priority?.reason ?? "با تیک تدریس‌شده و ثبت تلاش، اولویت ساخته می‌شود."}
+                </div>
+              </div>
+              <div className="rounded-xl bg-ink-50 p-3">
+                <div className="text-xs text-ink-600">آزمون نزدیک</div>
+                <div className="mt-1 text-sm font-semibold">{brief.nearest_exam?.title ?? "ثبت نشده"}</div>
+                {brief.nearest_exam ? (
+                  <div className="muted mt-1">
+                    {brief.nearest_exam.date} — {toPersianDigits(brief.nearest_exam.days_left)} روز مانده
+                    {brief.nearest_exam.readiness?.value !== null && brief.nearest_exam.readiness?.value !== undefined
+                      ? ` · آمادگی ${percent(brief.nearest_exam.readiness.value)}`
+                      : " · آمادگی نامعلوم"}
+                  </div>
+                ) : (
+                  <div className="muted mt-1">امتحان مدرسه یا آزمون آزمایشی را ثبت کن تا اولویت‌ها واقعی شوند.</div>
+                )}
+              </div>
+            </div>
+
+            {(brief.important_tasks ?? []).length > 0 && (
+              <ul className="mt-3 grid gap-2">
+                {brief.important_tasks.map((task: any) => (
+                  <li key={task.id} className="flex items-center justify-between rounded-xl border border-ink-200 p-2.5">
+                    <div>
+                      <div className="text-sm font-medium">{task.title}</div>
+                      <div className="muted">{task.type_label ?? ""}</div>
+                    </div>
+                    <Badge tone="muted">{statusLabel(task.status)}</Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="mt-3 rounded-xl border border-brand-200 bg-brand-50 p-3">
+              <div className="text-xs font-semibold text-brand-700">پیشنهاد بعدی: {brief.next_action?.title}</div>
+              <p className="mt-1 text-xs text-brand-700">{brief.next_action?.reason}</p>
+              <p className="muted mt-1">{brief.note}</p>
+            </div>
+          </Card>
+        )}
+
         <Card
           title={<span>الان مهمترین چیز</span>}
           action={<Link to="/plan" className="btn-soft btn-xs">برنامه هفته</Link>}

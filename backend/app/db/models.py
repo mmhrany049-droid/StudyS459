@@ -79,7 +79,7 @@ class UserProfile(Base, TimestampMixin):
     # self reported vs observed kept apart (V2.1 golden rule)
     self_reported = Column(SafeJSON, default=dict)
     preferences = Column(SafeJSON, default=dict)
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
     version = Column(Integer, default=1)
 
     user = relationship("User", back_populates="profile")
@@ -306,7 +306,7 @@ class TestSession(Base, TimestampMixin):
     import_key = Column(String(96))  # idempotency for past imports
     source = Column(String(24), default="manual")
     notes = Column(Text)
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
 
     __table_args__ = (Index("ix_sessions_user_date", "user_id", "planned_date"),)
 
@@ -377,7 +377,7 @@ class AttemptResult(Base, TimestampMixin):
     error_category = Column(String(24))
     error_category_confidence = Column(Float)
     source = Column(String(24), default="live")  # live | historical_import
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
 
     __table_args__ = (
         UniqueConstraint("response_entry_id", "is_current", name="uq_attempt_current_entry"),
@@ -509,7 +509,7 @@ class StudyTask(Base, TimestampMixin):
     override_reason = Column(Text)
     priority_score = Column(Float)
     display_order = Column(Integer, default=0)
-    planner_version = Column(String(32), default="v3.0.0")
+    planner_version = Column(String(32), default="v3.1.0")
     evidence = Column(SafeJSON, default=dict)
     created_by = Column(String(16), default="planner")
     updated_by = Column(String(16), default="planner")
@@ -554,7 +554,7 @@ class CapacitySnapshot(Base, TimestampMixin):
     factors = Column(SafeJSON, default=dict)
     evidence = Column(SafeJSON, default=dict)
     source = Column(String(24), default="estimate")
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
 
     __table_args__ = (UniqueConstraint("user_id", "date", "source", name="uq_capacity_day"),)
 
@@ -577,7 +577,7 @@ class PlanningSession(Base, TimestampMixin):
     animation_stages = Column(SafeJSON, default=dict)
     overload = Column(SafeJSON, default=dict)
     confidence = Column(Float)
-    planner_version = Column(String(32), default="v3.0.0")
+    planner_version = Column(String(32), default="v3.1.0")
     finalized_at = Column(DateTime)
     rebuilt_from_id = Column(Integer, ForeignKey("planning_sessions.id"))
 
@@ -677,7 +677,7 @@ class Exam(Base, TimestampMixin):
     files = Column(SafeJSON, default=list)          # uploaded PDF/photo metadata
     planned_topics_only = Column(Boolean, default=True)
     notes = Column(Text)
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
 
 
 class ExamTopic(Base, TimestampMixin):
@@ -820,7 +820,7 @@ class Goal(Base, TimestampMixin):
     progress = Column(SafeJSON, default=dict)
     confidence = Column(Float)
     notes = Column(Text)
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
 
 
 class GoalMilestone(Base, TimestampMixin):
@@ -883,7 +883,7 @@ class LearningState(Base, TimestampMixin):
     uncertainty = Column(Float)
     evidence = Column(SafeJSON, default=dict)
     computed_at = Column(DateTime, default=_now)
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
 
     __table_args__ = (
         UniqueConstraint("user_id", "topic_id", "model_version", name="uq_learning_state"),
@@ -902,7 +902,7 @@ class CoverageMetric(Base, TimestampMixin):
     attempted_question_count = Column(Integer, default=0)
     coverage = Column(Float)
     computed_at = Column(DateTime, default=_now)
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
 
     __table_args__ = (UniqueConstraint("user_id", "scope_type", "scope_id", name="uq_coverage_scope"),)
 
@@ -921,7 +921,7 @@ class AccuracyMetric(Base, TimestampMixin):
     accuracy = Column(Float)
     unanswered_rate = Column(Float)
     computed_at = Column(DateTime, default=_now)
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
 
     __table_args__ = (UniqueConstraint("user_id", "scope_type", "scope_id", name="uq_accuracy_scope"),)
 
@@ -941,7 +941,7 @@ class RetentionState(Base, TimestampMixin):
     lapses = Column(Integer, default=0)
     confidence = Column(Float)
     evidence_count = Column(Integer, default=0)
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
 
     __table_args__ = (UniqueConstraint("user_id", "topic_id", name="uq_retention_topic"),)
 
@@ -960,7 +960,7 @@ class ConfidenceState(Base, TimestampMixin):
     confidence = Column(Float)
     evidence_count = Column(Integer, default=0)
     evidence = Column(SafeJSON, default=dict)
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
 
     __table_args__ = (UniqueConstraint("user_id", "scope_type", "scope_id", "metric", name="uq_confidence_metric"),)
 
@@ -1013,7 +1013,7 @@ class Recommendation(Base, TimestampMixin):
     expires_at = Column(Date)
     feedback = Column(SafeJSON, default=dict)
     explanation = Column(SafeJSON, default=dict)
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
     quiet = Column(Boolean, default=True)
 
 
@@ -1039,7 +1039,7 @@ class PrioritySnapshot(Base, TimestampMixin):
     score = Column(Float)
     components = Column(SafeJSON, default=dict)
     confidence = Column(Float)
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
     rank = Column(Integer)
 
     __table_args__ = (UniqueConstraint("user_id", "topic_id", "horizon", "computed_for", name="uq_priority_snapshot"),)
@@ -1065,7 +1065,7 @@ class DurationPrediction(Base, TimestampMixin):
     evidence_count = Column(Integer, default=0)
     method = Column(String(32))  # personal_model|topic_model|type_model|first_month_fallback
     based_on = Column(SafeJSON, default=dict)
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
 
 
 class DurationObservation(Base, TimestampMixin):
@@ -1192,7 +1192,7 @@ class ExperimentResult(Base, TimestampMixin):
     conclusion = Column(String(32))  # supports|contradicts|inconclusive
     confidence = Column(Float)
     interpretation = Column(Text)
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
 
 
 class ResearchEntry(Base, TimestampMixin):
@@ -1393,7 +1393,7 @@ class RecalculationJob(Base, TimestampMixin):
     changes = Column(SafeJSON, default=dict)
     started_at = Column(DateTime)
     finished_at = Column(DateTime)
-    model_version = Column(String(32), default="v3.0.0")
+    model_version = Column(String(32), default="v3.1.0")
     error = Column(Text)
 
 

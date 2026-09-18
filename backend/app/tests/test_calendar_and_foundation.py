@@ -103,4 +103,5 @@ def test_priority_weights_sum_to_expected_budget():
 
 
 def test_model_version_is_pinned():
-    assert config.MODEL_VERSION == "v3.0.0"
+    # V3.1 keeps the same pinned-version contract; the value moves with the release.
+    assert config.MODEL_VERSION == "v3.1.0"
